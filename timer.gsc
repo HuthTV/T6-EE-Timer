@@ -15,28 +15,26 @@ init()
     if(is_origins())
     {
         if(level.is_forever_solo_game)
-            split_list = array("NML", "Boxes", "Staff 1", "Staff 2", "Staff 3", "Staff 4", "AFD", "End");
+            level thread origins_timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|") );
         else
-            split_list = array("Boxes", "AFD", "End");
-
-        level thread origins_timer(split_list);
+            level thread origins_timer( strtok("Boxes|AFD|End", "|") );
     }  
     else if(is_mob()) 
     {
         if(level.is_forever_solo_game)
-            split_list = array("Dryer", "Gondola1", "Plane1", "Gondola2", "Plane2", "Gondola3", "Plane3", "Codes", "End");
+            level thread mob_timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|End", "|") );
         else
-            split_list = array("Plane1", "Plane2", "Plane3", "Codes", "Fight");
-
-        level thread mob_timer(split_list);
+            level thread mob_timer( strtok("Plane1|Plane2|Plane3|Codes|Fight", "|") );   
     } 
     else if(is_tranzit() && level.is_forever_solo_game) 
     {
-        level thread solo_tranzit_timer();
+        level thread tranzit_timer( strtok("Jetgun|Tower|End", "|") );
     }
     else
+    {
         return;
-
+    }
+    
     level thread on_player_connect();
     level thread tick_tracker();
 
@@ -65,34 +63,43 @@ on_player_spawned()
     iPrintLn("source: github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
 }
 
-solo_tranzit_timer()
+tranzit_timer( split_list )
 {
-    split_list = array("Jetgun", "Tower", "End");
+    
     foreach(split in split_list)
-    {
-        create_new_split(split, 15);
-    }    
+        create_new_split(split, 15); 
+
     flag_wait("initial_blackscreen_passed");
-
-    unhide("Jetgun");
-    while(level.sq_progress["rich"]["A_jetgun_built"] == 0) wait 0.05;
-    split("Jetgun");
-
-    unhide("Tower");
-    while(level.sq_progress["rich"]["A_jetgun_tower"] == 0) wait 0.05;
-    split("Tower");
-
-    unhide("End");
-    while(level.sq_progress["rich"]["FINISHED"] == 0) wait 0.05;
-    split("End");
+    for(i = 0; i < split_list.size; i++)
+    {
+        unhide(split_list[i]);
+        tranzit_wait_split(split_list[i]);
+        split(split_list[i]);
+    } 
 }
 
-origins_timer(split_list)
+tranzit_wait_split( split )
+{
+    switch (split) 
+    {
+        case "Jetgun": 
+            while(level.sq_progress["rich"]["A_jetgun_built"] == 0) wait 0.05;
+            return;
+
+        case "Tower":
+            while(level.sq_progress["rich"]["A_jetgun_tower"] == 0) wait 0.05;
+            return;
+            
+        case "End":
+            while(level.sq_progress["rich"]["FINISHED"] == 0) wait 0.05;
+            return;
+    }     
+}
+
+origins_timer( split_list )
 {
     foreach(split in split_list)
-    {
         create_new_split(split, 65);
-    }
     
     flag_wait("initial_blackscreen_passed");
 
