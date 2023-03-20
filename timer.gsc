@@ -9,28 +9,26 @@ init()
 {
     level.version = "v1.0";
     level.splits = [];
+    level.active_color = (0.82, 0.97, 0.97);
+    level.complete_color = (0.01, 0.62, 0.74);
 
     if(is_origins())
     {
         if(level.is_forever_solo_game)
-        {
-            level thread solo_origins_timer();
-        }
+            split_list = array("NML", "Boxes", "Staff 1", "Staff 2", "Staff 3", "Staff 4", "AFD", "End");
         else
-        {
-            level thread coop_origins_timer();
-        }
+            split_list = array("Boxes", "AFD", "End");
+
+        level thread origins_timer(split_list);
     }  
     else if(is_mob()) 
     {
         if(level.is_forever_solo_game)
-        {
-            level thread solo_mob_timer();
-        }
+            split_list = array("Dryer", "Gondola1", "Plane1", "Gondola2", "Plane2", "Gondola3", "Plane3", "Codes", "End");
         else
-        {
-            level thread coop_mob_timer();
-        } 
+            split_list = array("Plane1", "Plane2", "Plane3", "Codes", "Fight");
+
+        level thread mob_timer(split_list);
     } 
     else if(is_tranzit() && level.is_forever_solo_game) 
     {
@@ -60,6 +58,7 @@ on_player_connect()
 on_player_spawned()
 {
     self waittill( "spawned_player" );
+    self.score = 2500000;
     wait 2;
     iPrintLn("^3EE Timer ^7" + level.version);
     wait 1;
@@ -71,7 +70,7 @@ solo_tranzit_timer()
     split_list = array("Jetgun", "Tower", "End");
     foreach(split in split_list)
     {
-        create_new_split(split);
+        create_new_split(split, 15);
     }    
     flag_wait("initial_blackscreen_passed");
 
@@ -88,96 +87,112 @@ solo_tranzit_timer()
     split("End");
 }
 
-solo_origins_timer()
+origins_timer(split_list)
 {
-    split_list = array("NML", "Boxes", "Staff 1", "Staff 2", "Staff 3", "Staff 4", "AFD", "End");
     foreach(split in split_list)
     {
-        create_new_split(split);
-    } 
+        create_new_split(split, 65);
+    }
+    
     flag_wait("initial_blackscreen_passed");
 
-    unhide("NML");
-    flag_wait("activate_zone_nml");
-    split("NML");
-
-    unhide("Boxes");
-    while(level.n_soul_boxes_completed < 4) wait 0.05;
-    wait 4;
-    split("Boxes");
-
-    unhide("Staff 1");
-    while(level.n_staffs_crafted < 1) wait 0.05;
-    split("Staff 1");
-    //change staff label
-
-    unhide("Staff 2");
-    while(level.n_staffs_crafted < 2) wait 0.05;
-    split("Staff 2");
-    //change staff label
-
-    unhide("Staff 3");
-    while(level.n_staffs_crafted < 3) wait 0.05;
-    split("Staff 3");
-    //change staff label
-
-    //change staff label
-    unhide("Staff 4");
-    while(level.n_staffs_crafted < 4) wait 0.05;
-    split("Staff 4");
-
-    unhide("AFD");
-    flag_wait("ee_all_staffs_placed");
-    split("AFD");
-
-    unhide("End");
-    level waittill("end_game");
-    split("End"); 
+    for(i = 0; i < split_list.size; i++)
+    {
+        unhide(split_list[i]);
+        origins_wait_split(split_list[i]);
+        split(split_list[i]);
+    } 
 }
 
-coop_origins_timer()
+origins_wait_split( split )
 {
-    split_list = array("Boxes", "AFD", "End");
+    switch (split) {
+    case "NML": 
+        flag_wait("activate_zone_nml");
+        return;
+
+    case "Boxes":
+        while(level.n_soul_boxes_completed < 4) wait 0.05;
+        wait 4;
+        return;
+        
+    case "Staff 1":
+    case "Staff 2":
+    case "Staff 3":
+    case "Staff 4":
+        curr = level.n_staffs_crafted;
+        while(curr <= level.n_staffs_crafted) wait 0.05;
+        //Change staff label?
+        return;
+
+    case "AFD":
+        flag_wait("ee_all_staffs_placed");
+        return;
+
+    case "End":
+        level waittill("end_game");
+        return;
+    }   
+}
+
+mob_timer( split_list )
+{
     foreach(split in split_list)
     {
-        create_new_split(split);
-    } 
+        create_new_split(split, 65);
+    }
+
     flag_wait("initial_blackscreen_passed");
 
-    unhide("Boxes");
-    while(level.n_soul_boxes_completed < 4) wait 0.05;
-    wait 4;
-    split("Boxes");
-
-    unhide("AFD");
-    flag_wait("ee_all_staffs_placed");
-    split("AFD");
-
-    unhide("End");
-    level waittill("end_game");
-    split("End"); 
-}
-
-solo_mob_timer()
-{
-    split_list = array("Dryer", "Gondola1", "Plane1", "Gondola2", "Plane2", "Gondola3", "Plane3", "Codes", "End");
-    foreach(split in split_list)
+    for(i = 0; i < split_list.size; i++)
     {
-        create_new_split(split);
+        unhide(split_list[i]);
+        mob_wait_split(split_list[i]);
+        split(split_list[i]);
     } 
 }
 
-coop_mob_timer()
+mob_wait_split( split )
 {
-    split_list = array("Plane1", "Plane2", "Plane3", "Codes", "End");
-    foreach(split in split_list)
-    {
-        create_new_split(split);
-    }  
+    switch (split) {
+    case "Dryer": 
+        flag_wait("dryer_cycle_active");
+        return;
+
+    case "Gondola1":
+        flag_wait("fueltanks_found");
+        flag_wait("gondola_in_motion");
+        return;
+        
+    case "Plane1":
+    case "Plane2":
+    case "Plane3":
+        flag_wait("plane_boarded");
+        return;
+
+    case "Gondola2":
+    case "Gondola3":
+        flag_wait("gondola_in_motion");
+        return;
+
+    case "Codes":
+        level waittill_multiple( "nixie_final_" + 386, "nixie_final_" + 481, "nixie_final_" + 101, "nixie_final_" + 872 );
+        return;
+
+    case "End":
+        wait 10;
+        while( isdefined(level.m_headphones) ) wait 0.05;
+        return;
+
+    case "Fight":
+        level waittill("end_game");
+        return;        
+    }
 }
 
 split(split_name)
 {
+    level.splits[split_name].color = level.complete_color;
     level.splits[split_name] settext(tick_time_string(level.ticks - level.starttick));
     print("total ticks - " + (level.ticks - level.starttick));
     print("game_time_string - " + game_time_string());
@@ -188,19 +203,21 @@ unhide(split_name)
     level.splits[split_name].alpha = 0.8;
 }
 
-create_new_split(split_name)
+create_new_split(split_name, yoffset)
 {
+    y = yoffset;
+    y += (level.splits.size - 1) * 16;
     level.splits[split_name] = newHudElem();
     level.splits[split_name].alignx = "left";
-	level.splits[split_name].aligny = "center";
-	level.splits[split_name].horzalign = "left";
-	level.splits[split_name].vertalign = "top";
+    level.splits[split_name].aligny = "center";
+    level.splits[split_name].horzalign = "left";
+    level.splits[split_name].vertalign = "top";
     level.splits[split_name].x = -62;
-	level.splits[split_name].y = -34 + ( (level.splits.size - 1) * 16);
+    level.splits[split_name].y = -34 + y;
     level.splits[split_name].fontscale = 1.4;
     level.splits[split_name].hidewheninmenu = 0;
     level.splits[split_name].alpha = 0.8;
-    level.splits[split_name].fontscale = 1.4;
+    level.splits[split_name].color = level.active_color;
     set_split_label(split_name);
     level thread split_start_thread(split_name);
 }
@@ -208,23 +225,25 @@ create_new_split(split_name)
 set_split_label(split_name)
 {
     switch (split_name) {
-    case "Jetgun": level.splits[split_name].label = &"Jetgun ^3"; break;
-    case "Tower": level.splits[split_name].label = &"Tower ^3"; break;
-    case "End": level.splits[split_name].label = &"End ^3"; break;
-    case "NML": level.splits[split_name].label = &"NML ^3"; break;
-    case "Boxes": level.splits[split_name].label = &"Boxes ^3"; break;
-    case "Staff 1": level.splits[split_name].label = &"Staff 1 ^3"; break;
-    case "Staff 2": level.splits[split_name].label = &"Staff 2 ^3"; break;
-    case "Staff 3": level.splits[split_name].label = &"Staff 3 ^3"; break;
-    case "Staff 4": level.splits[split_name].label = &"Staff 4 ^3"; break;
-    case "Dryer": level.splits[split_name].label = &"Dryer ^3"; break;
-    case "Gondola1": level.splits[split_name].label = &"Gondola I ^3"; break;
-    case "Plane1": level.splits[split_name].label = &"Plane I ^3"; break;
-    case "Gondola2": level.splits[split_name].label = &"Gondola II ^3"; break;
-    case "Plane2": level.splits[split_name].label = &"Plane II ^3"; break;
-    case "Gondola3": level.splits[split_name].label = &"Gondola III ^3"; break;
-    case "Plane3": level.splits[split_name].label = &"Plane III ^3"; break;
-    case "Codes": level.splits[split_name].label = &"Codes ^3"; break;
+    case "Jetgun": level.splits[split_name].label = &"^3Jetgun ^7"; break;
+    case "Tower": level.splits[split_name].label = &"^3Tower ^7"; break;
+    case "NML": level.splits[split_name].label = &"^3NML ^7"; break;
+    case "Boxes": level.splits[split_name].label = &"^3Boxes ^7"; break;
+    case "Staff 1": level.splits[split_name].label = &"^3Staff 1 ^7"; break;
+    case "Staff 2": level.splits[split_name].label = &"^3Staff 2 ^7"; break;
+    case "Staff 3": level.splits[split_name].label = &"^3Staff 3 ^7"; break;
+    case "Staff 4": level.splits[split_name].label = &"^3Staff 4 ^7"; break;
+    case "AFD": level.splits[split_name].label = &"^3AFD ^7"; break;
+    case "Dryer": level.splits[split_name].label = &"^3Dryer ^7"; break;
+    case "Gondola1": level.splits[split_name].label = &"^3Gondola I ^7"; break;
+    case "Gondola2": level.splits[split_name].label = &"^3Gondola II ^7"; break;
+    case "Gondola3": level.splits[split_name].label = &"^3Gondola III ^7"; break;
+    case "Plane1": level.splits[split_name].label = &"^3Plane I ^7"; break;
+    case "Plane2": level.splits[split_name].label = &"^3Plane II ^7"; break;
+    case "Plane3": level.splits[split_name].label = &"^3Plane III ^7"; break;
+    case "Codes": level.splits[split_name].label = &"^3Codes ^7"; break;
+    case "Fight": level.splits[split_name].label = &"^Fight ^7"; break;
+    case "End": level.splits[split_name].label = &"^3End ^7"; break;
     }
 }
 
