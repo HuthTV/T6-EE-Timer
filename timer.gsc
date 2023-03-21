@@ -36,10 +36,8 @@ init()
     }
     
     level thread on_player_connect();
-    level thread tick_tracker();
 
     flag_wait("initial_blackscreen_passed");
-    level.starttick = level.ticks;
     level.timer_level_start_time = GetTime();
 }
 
@@ -258,31 +256,6 @@ split_start_thread(split_name)
 {
     flag_wait("initial_blackscreen_passed");
     level.splits[split_name] SetTenthsTimerUp(0.05);
-}
-
-tick_tracker()
-{
-    level.tick_hud = newHudElem();
-	level.tick_hud.alignx = "center";
-	level.tick_hud.aligny = "bottom";
-	level.tick_hud.horzalign = "right";
-	level.tick_hud.vertalign = "top";
-	level.tick_hud.x += 0;
-	level.tick_hud.y += 0;
-	level.tick_hud.fontscale = 1.4;
-	level.tick_hud.hidewheninmenu = 0;
-    level.tick_hud.label = &"TICKS :^3";
-    level.tick_hud.alpha = 0.8;
-    
-    level.ticks = 1;
-
-    while (true) 
-    {
-        level.tick_hud setvalue(level.ticks);
-        level.ticks++;
-        wait 0.05;
-    }
-
 }
 
 persistent_upgrades_bank()
