@@ -200,7 +200,7 @@ mob_wait_split( split )
 split(split_name, time)
 {
     level.splits[split_name].color = level.complete_color;
-    level.splits[split_name] settext(game_time_string(time)); 
+    level.splits[split_name] settext(game_time_string(time - level.timer_level_start_time)); 
 }
 
 unhide(split_name)
@@ -315,36 +315,21 @@ is_origins()
 	return false;
 }
 
-game_time_string(time)
+game_time_string( duration )
 {
-        duration = time - level.timer_level_start_time;
-	
-        mid = int(duration / 1000);
-        
-        min = int(mid / 60);
-		sec = mid % 60;
-
-        m_m = min * 60000;
-        s_m = sec * 1000;
-
-        ms = (duration % 1000)/10; 
-
         time_string = "";
 
-        if(min > 9)
-            { time_string += min + ":"; }
-        else
-            { time_string += "0" + min + ":"; }
+        total_sec = int(duration / 1000);
+        total_min = int(total_sec / 60);
+		remaining_sec = total_sec % 60;
+        remaining_ms = (duration % 1000)/10; 
 
-        if(sec > 9)
-            { time_string += sec + "."; }
-        else
-            { time_string += "0" + sec + "."; }
-
-        if(ms > 9)
-            { time_string += ms; }
-        else
-            { time_string += "0" + ms; } 
+        if(total_min > 9)       { time_string += total_min + ":"; }
+        else                    { time_string += "0" + total_min + ":"; }
+        if(remaining_sec > 9)   { time_string += remaining_sec + "."; }
+        else                    { time_string += "0" + remaining_sec + "."; }
+        if(remaining_ms > 9)    { time_string += remaining_ms; }
+        else                    { time_string += "0" + remaining_ms; } 
 
         return time_string;
 }
