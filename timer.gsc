@@ -40,7 +40,7 @@ init()
 
     flag_wait("initial_blackscreen_passed");
     level.starttick = level.ticks;
-    level.level_start_time = GetTime();
+    level.timer_level_start_time = GetTime();
 }
 
 on_player_connect()
@@ -154,8 +154,8 @@ mob_timer( split_list )
     for(i = 0; i < split_list.size; i++)
     {
         unhide(split_list[i]);
-        mob_wait_split(split_list[i]);
-        split(split_list[i]);
+        time = mob_wait_split(split_list[i]);
+        split(split_list[i], time);
     } 
 }
 
@@ -164,45 +164,45 @@ mob_wait_split( split )
     switch (split) {
     case "Dryer": 
         flag_wait("dryer_cycle_active");
-        return;
+        break;  
 
     case "Gondola1":
         flag_wait("fueltanks_found");
         flag_wait("gondola_in_motion");
-        return;
+        break;  
         
     case "Plane1":
     case "Plane2":
     case "Plane3":
         flag_wait("plane_boarded");
-        return;
+        break;  
 
     case "Gondola2":
     case "Gondola3":
         flag_wait("gondola_in_motion");
-        return;
+        break;  
 
     case "Codes":
         level waittill_multiple( "nixie_final_" + 386, "nixie_final_" + 481, "nixie_final_" + 101, "nixie_final_" + 872 );
-        return;
+        break;  
 
     case "End":
         wait 10;
         while( isdefined(level.m_headphones) ) wait 0.05;
-        return;
+        break;  
 
     case "Fight":
         level waittill("end_game");
-        return;        
+        break;        
     }
+
+    return GetTime(); 
 }
 
-split(split_name)
+split(split_name, time)
 {
     level.splits[split_name].color = level.complete_color;
-    level.splits[split_name] settext(tick_time_string(level.ticks - level.starttick));
-    print("total ticks - " + (level.ticks - level.starttick));
-    print("game_time_string - " + game_time_string());
+    level.splits[split_name] settext(game_time_string(time)); 
 }
 
 unhide(split_name)
@@ -223,7 +223,7 @@ create_new_split(split_name, yoffset)
     level.splits[split_name].y = -34 + y;
     level.splits[split_name].fontscale = 1.4;
     level.splits[split_name].hidewheninmenu = 0;
-    level.splits[split_name].alpha = 0.8;
+    level.splits[split_name].alpha = 0.2;
     level.splits[split_name].color = level.active_color;
     set_split_label(split_name);
     level thread split_start_thread(split_name);
@@ -257,7 +257,7 @@ set_split_label(split_name)
 split_start_thread(split_name)
 {
     flag_wait("initial_blackscreen_passed");
-    level.splits[split_name] SetTenthsTimerUp(0.01);
+    level.splits[split_name] SetTenthsTimerUp(0.05);
 }
 
 tick_tracker()
@@ -322,4 +322,56 @@ persistent_upgrades_bank()
 		self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", bank_points, level.banking_map);
 		self.account_value = bank_points;
 	}
+}
+
+is_tranzit()
+{
+	if(level.script == "zm_transit" && level.scr_zm_map_start_location == "transit" && level.scr_zm_ui_gametype_group == "zclassic") return true;
+	return false;
+}
+
+is_mob()
+{
+	if(level.script == "zm_prison") return true;
+	return false;
+}
+
+is_origins()
+{
+	if(level.script == "zm_tomb") return true;
+	return false;
+}
+
+game_time_string(time)
+{
+        duration = time - level.timer_level_start_time;
+	
+        mid = int(duration / 1000);
+        
+        min = int(mid / 60);
+		sec = mid % 60;
+
+        m_m = min * 60000;
+        s_m = sec * 1000;
+
+        ms = (duration % 1000)/10; 
+
+        time_string = "";
+
+        if(min > 9)
+            { time_string += min + ":"; }
+        else
+            { time_string += "0" + min + ":"; }
+
+        if(sec > 9)
+            { time_string += sec + "."; }
+        else
+            { time_string += "0" + sec + "."; }
+
+        if(ms > 9)
+            { time_string += ms; }
+        else
+            { time_string += "0" + ms; } 
+
+        return time_string;
 }
