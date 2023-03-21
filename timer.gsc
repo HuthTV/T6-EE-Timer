@@ -54,7 +54,6 @@ on_player_connect()
 on_player_spawned()
 {
     self waittill( "spawned_player" );
-    self.score = 2500000;
     wait 2;
     iPrintLn("^3EE Timer ^7" + level.version);
     wait 1;
@@ -63,7 +62,6 @@ on_player_spawned()
 
 tranzit_timer( split_list )
 {
-    
     foreach(split in split_list)
         create_new_split(split, 15); 
 
@@ -71,8 +69,8 @@ tranzit_timer( split_list )
     for(i = 0; i < split_list.size; i++)
     {
         unhide(split_list[i]);
-        tranzit_wait_split(split_list[i]);
-        split(split_list[i]);
+        time = tranzit_wait_split(split_list[i]);
+        split(split_list[i], time);
     } 
 }
 
@@ -82,16 +80,18 @@ tranzit_wait_split( split )
     {
         case "Jetgun": 
             while(level.sq_progress["rich"]["A_jetgun_built"] == 0) wait 0.05;
-            return;
+            break;
 
         case "Tower":
             while(level.sq_progress["rich"]["A_jetgun_tower"] == 0) wait 0.05;
-            return;
+            break;
             
         case "End":
             while(level.sq_progress["rich"]["FINISHED"] == 0) wait 0.05;
-            return;
-    }     
+            break;
+    }
+
+    return GetTime();     
 }
 
 origins_timer( split_list )
@@ -104,8 +104,8 @@ origins_timer( split_list )
     for(i = 0; i < split_list.size; i++)
     {
         unhide(split_list[i]);
-        origins_wait_split(split_list[i]);
-        split(split_list[i]);
+        time = origins_wait_split(split_list[i]);
+        split(split_list[i], time);
     } 
 }
 
@@ -114,12 +114,12 @@ origins_wait_split( split )
     switch (split) {
     case "NML": 
         flag_wait("activate_zone_nml");
-        return;
+        break;
 
     case "Boxes":
         while(level.n_soul_boxes_completed < 4) wait 0.05;
         wait 4;
-        return;
+        break;
         
     case "Staff 1":
     case "Staff 2":
@@ -128,16 +128,18 @@ origins_wait_split( split )
         curr = level.n_staffs_crafted;
         while(curr <= level.n_staffs_crafted) wait 0.05;
         //Change staff label?
-        return;
+        break;
 
     case "AFD":
         flag_wait("ee_all_staffs_placed");
-        return;
+        break;
 
     case "End":
         level waittill("end_game");
-        return;
-    }   
+        break;
+    }
+
+    return GetTime(); 
 }
 
 mob_timer( split_list )
