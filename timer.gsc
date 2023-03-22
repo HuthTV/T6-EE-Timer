@@ -12,23 +12,21 @@ init()
     level.active_color = (0.82, 0.97, 0.97);
     level.complete_color = (0.01, 0.62, 0.74);
 
+    solo = level.is_forever_solo_game;
+
     if(is_origins())
     {
-        if(level.is_forever_solo_game)
-            level thread origins_timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|") );
-        else
-            level thread origins_timer( strtok("Boxes|AFD|End", "|") );
+        if(solo)    level thread origins_timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|") );
+        else        level thread origins_timer( strtok("Boxes|AFD|End", "|") );
     }  
     else if(is_mob()) 
     {
-        if(level.is_forever_solo_game)
-            level thread mob_timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|End", "|") );
-        else
-            level thread mob_timer( strtok("Plane1|Plane2|Plane3|Codes|Fight", "|") );   
+        if(solo)    level thread mob_timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|End", "|") );
+        else        level thread mob_timer( strtok("Plane1|Plane2|Plane3|Codes|Fight", "|") );   
     } 
-    else if(is_tranzit() && level.is_forever_solo_game) 
+    else if(is_tranzit()) 
     {
-        level thread tranzit_timer( strtok("Jetgun|Tower|End", "|") );
+        if(solo)    level thread tranzit_timer( strtok("Jetgun|Tower|End", "|") );
     }
     else
     {
@@ -36,7 +34,6 @@ init()
     }
     
     level thread on_player_connect();
-
     flag_wait("initial_blackscreen_passed");
     level.timer_level_start_time = GetTime();
 }
@@ -262,17 +259,14 @@ split_start_thread(split_name)
 
 persistent_upgrades_bank()
 {
-    pers_perks = array("board", "revive", "multikill_headshots", "insta_kill", "jugg", "carpenter", "perk_lose", "pistol_points", "double_points", "sniper", "box_weapon", "nube");
+    pers_perks = strtok("board|revive|multikill_headshots|insta_kill|jugg|carpenter|perk_lose|pistol_points|double_points|sniper|box_weapon|nube", "|")
 
-    create_bool_dvar( "full_bank", 1 )
     create_bool_dvar( "pers_insta_kill", 0 )
+    create_bool_dvar( "full_bank", 1 )
     create_bool_dvar( "pers_cash_back", 1 )
 
     foreach(pers_perk in pers_perks)
-	{
-        dvar = "pers_" + pers_perk;
-        create_bool_dvar( pers_perk, 1 )
-	}
+        create_bool_dvar( "pers_" + pers_perk, 1 )
     
     foreach (pers_perk in pers_perks)
 	{
@@ -299,20 +293,17 @@ persistent_upgrades_bank()
 
 is_tranzit()
 {
-	if(level.script == "zm_transit" && level.scr_zm_map_start_location == "transit" && level.scr_zm_ui_gametype_group == "zclassic") return true;
-	return false;
+	return level.script == "zm_transit" &&  level.scr_zm_ui_gametype_group == "zclassic";
 }
 
 is_mob()
 {
-	if(level.script == "zm_prison") return true;
-	return false;
+	return level.script == "zm_prison";
 }
 
 is_origins()
 {
-	if(level.script == "zm_tomb") return true;
-	return false;
+	return level.script == "zm_tomb";
 }
 
 game_time_string( duration )
