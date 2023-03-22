@@ -3,12 +3,11 @@
 #include maps\mp\zombies\_zm_utility;
 #include maps\mp\gametypes_zm\_hud_util;
 #include common_scripts\utility;
-#include scripts\zm\utils;
 
 init()
 {
-    level.version = "v1.0";
     level.splits = [];
+    level.version = "v1.0";
     level.active_color = (0.82, 0.97, 0.97);
     level.complete_color = (0.01, 0.62, 0.74);
 
@@ -21,8 +20,8 @@ init()
     }  
     else if(is_mob())
     {
-        if(solo)    level thread timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|Done", "|"), 15);
-        else        level thread timer( strtok("Plane1|Plane2|Plane3|Codes|End", "|"), 15);   
+        if(solo)    level thread timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|Done", "|"), 65);
+        else        level thread timer( strtok("Plane1|Plane2|Plane3|Codes|End", "|"), 65);   
     } 
     else if(is_tranzit())
     {
@@ -40,12 +39,13 @@ init()
 
 on_player_connect()
 {
-        while(true)
-        {
-           level waittill( "connected", player );
-           player thread persistent_upgrades_bank();
-           player thread on_player_spawned(); 
-        }
+    level endon( "game_ended" );
+    while(true)
+    {
+        level waittill( "connected", player );
+        player thread on_player_spawned(); 
+        player thread persistent_upgrades_bank();
+    }
 }
 
 on_player_spawned()
@@ -58,6 +58,8 @@ on_player_spawned()
 
 timer( split_list, yoffset )
 {
+    level endon( "game_ended" );
+
     foreach(split in split_list)
         create_new_split(split, yoffset); 
 
@@ -199,8 +201,12 @@ set_split_label(split_name)
     case "Plane2": level.splits[split_name].label = &"^3Plane II ^7"; break;
     case "Plane3": level.splits[split_name].label = &"^3Plane III ^7"; break;
     case "Codes": level.splits[split_name].label = &"^3Codes ^7"; break;
-    case "Fight": level.splits[split_name].label = &"^Fight ^7"; break;
-    case "End": level.splits[split_name].label = &"^3End ^7"; break;
+
+    case "Fight":
+    case "End": 
+    case "EMP":
+    case "Done":
+        level.splits[split_name].label = &"^3End ^7"; break;
     }
 }
 
@@ -280,7 +286,6 @@ game_time_string( duration )
 
 create_bool_dvar( dvar, start_val )
 {
-    
     if( getDvar( dvar ) == "" ) 
 		setDvar( dvar, (1 * isDefined(start_val)) );
 }
