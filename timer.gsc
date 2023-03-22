@@ -236,10 +236,10 @@ set_split_label(split_name)
     case "Tower": level.splits[split_name].label = &"^3Tower ^7"; break;
     case "NML": level.splits[split_name].label = &"^3NML ^7"; break;
     case "Boxes": level.splits[split_name].label = &"^3Boxes ^7"; break;
-    case "Staff 1": level.splits[split_name].label = &"^3Staff 1 ^7"; break;
-    case "Staff 2": level.splits[split_name].label = &"^3Staff 2 ^7"; break;
-    case "Staff 3": level.splits[split_name].label = &"^3Staff 3 ^7"; break;
-    case "Staff 4": level.splits[split_name].label = &"^3Staff 4 ^7"; break;
+    case "Staff 1": level.splits[split_name].label = &"^3Staff I ^7"; break;
+    case "Staff 2": level.splits[split_name].label = &"^3Staff II ^7"; break;
+    case "Staff 3": level.splits[split_name].label = &"^3Staff III ^7"; break;
+    case "Staff 4": level.splits[split_name].label = &"^3Staff IV ^7"; break;
     case "AFD": level.splits[split_name].label = &"^3AFD ^7"; break;
     case "Dryer": level.splits[split_name].label = &"^3Dryer ^7"; break;
     case "Gondola1": level.splits[split_name].label = &"^3Gondola I ^7"; break;
@@ -264,25 +264,23 @@ persistent_upgrades_bank()
 {
     pers_perks = array("board", "revive", "multikill_headshots", "insta_kill", "jugg", "carpenter", "perk_lose", "pistol_points", "double_points", "sniper", "box_weapon", "nube");
 
-    if( getDvar( "full_bank" ) == "" ) 
-		setDvar( "full_bank", 1 );
-
-    if( getDvar( "pers_insta_kill" ) == "" )
-			setDvar( "pers_insta_kill", 0 );
-
-    if( getDvar( "pers_cash_back" ) == "" )
-			setDvar( "pers_cash_back", 1 );
+    create_bool_dvar( "full_bank", 1 )
+    create_bool_dvar( "pers_insta_kill", 0 )
+    create_bool_dvar( "pers_cash_back", 1 )
 
     foreach(pers_perk in pers_perks)
 	{
- 		if( getDvar( "pers_" + pers_perk ) == "" )
-			setDvar( pers_perk, 1 );
+        dvar = "pers_" + pers_perk;
+        create_bool_dvar( pers_perk, 1 )
 	}
     
     foreach (pers_perk in pers_perks)
 	{
-        self maps\mp\zombies\_zm_stats::set_global_stat(level.pers_upgrades[pers_perk].stat_names[0], level.pers_upgrades[pers_perk].stat_desired_values[0]);
-        wait_network_frame();
+        if( getDvar( "pers_" + pers_perk ) )
+        {
+            self maps\mp\zombies\_zm_stats::set_global_stat(level.pers_upgrades[pers_perk].stat_names[0], level.pers_upgrades[pers_perk].stat_desired_values[0]);
+            wait_network_frame();
+        } 
 	}
     
     if( getDvar( "pers_cash_back" ))
@@ -334,4 +332,11 @@ game_time_string( duration )
         else                    { time_string += "0" + remaining_ms; } 
 
         return time_string;
+}
+
+create_bool_dvar( dvar, start_val )
+{
+    
+    if( getDvar( dvar ) == "" ) 
+		setDvar( dvar, (1 * isDefined(start_val)) );
 }
