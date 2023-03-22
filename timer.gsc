@@ -15,8 +15,8 @@ init()
 
     if(is_origins())
     {
-        if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|"), 65);
-        else        level thread timer( strtok("Boxes|AFD|End", "|"), 65 );
+        if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|"), 125);
+        else        level thread timer( strtok("Boxes|AFD|End", "|"), 125 );
     }  
     else if(is_mob())
     {
@@ -51,7 +51,7 @@ on_player_connect()
 on_player_spawned()
 {
     self waittill( "spawned_player" );
-    wait 3;
+    wait 2;
     iPrintLn("EE Timer " + level.version + " | github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
 }
 
@@ -83,7 +83,7 @@ wait_split( split )
 
         case "Boxes":
             while(level.n_soul_boxes_completed < 4) wait 0.05;
-            wait 4;
+            wait 4.3;
             break;
             
         case "Staff 1":
@@ -91,7 +91,7 @@ wait_split( split )
         case "Staff 3":
         case "Staff 4":
             curr = level.n_staffs_crafted;
-            while(curr <= level.n_staffs_crafted) wait 0.05;
+            while(curr == level.n_staffs_crafted) wait 0.05;
             //Change staff label?
             break;
 
@@ -174,8 +174,8 @@ create_new_split(split_name, yoffset)
     level.splits[split_name].x = -62;
     level.splits[split_name].y = -34 + y;
     level.splits[split_name].fontscale = 1.4;
-    level.splits[split_name].hidewheninmenu = 0;
-    level.splits[split_name].alpha = 0.2;
+    level.splits[split_name].hidewheninmenu = 1;
+    level.splits[split_name].alpha = 0;
     level.splits[split_name].color = level.active_color;
     set_split_label(split_name);
     level thread split_start_thread(split_name);
