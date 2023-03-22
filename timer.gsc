@@ -16,17 +16,17 @@ init()
 
     if(is_origins())
     {
-        if(solo)    level thread origins_timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|") );
-        else        level thread origins_timer( strtok("Boxes|AFD|End", "|") );
+        if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|"), 65);
+        else        level thread timer( strtok("Boxes|AFD|End", "|"), 65 );
     }  
-    else if(is_mob()) 
+    else if(is_mob())
     {
-        if(solo)    level thread mob_timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|End", "|") );
-        else        level thread mob_timer( strtok("Plane1|Plane2|Plane3|Codes|Fight", "|") );   
+        if(solo)    level thread timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|Done", "|"), 15);
+        else        level thread timer( strtok("Plane1|Plane2|Plane3|Codes|End", "|"), 15);   
     } 
-    else if(is_tranzit()) 
+    else if(is_tranzit())
     {
-        if(solo)    level thread tranzit_timer( strtok("Jetgun|Tower|End", "|") );
+        if(solo)    level thread timer( strtok("Jetgun|Tower|EMP", "|"), 15);
     }
     else
     {
@@ -51,30 +51,83 @@ on_player_connect()
 on_player_spawned()
 {
     self waittill( "spawned_player" );
-    wait 2;
-    iPrintLn("^3EE Timer ^7" + level.version);
-    wait 1;
-    iPrintLn("source: github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
+    wait 3;
+    iPrintLn("EE Timer " + level.version + " | github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
 }
 
-tranzit_timer( split_list )
+
+timer( split_list, yoffset )
 {
     foreach(split in split_list)
-        create_new_split(split, 15); 
+        create_new_split(split, yoffset); 
 
     flag_wait("initial_blackscreen_passed");
     for(i = 0; i < split_list.size; i++)
     {
         unhide(split_list[i]);
-        time = tranzit_wait_split(split_list[i]);
+        time = wait_split(split_list[i]);
         split(split_list[i], time);
     } 
 }
 
-tranzit_wait_split( split )
+wait_split( split )
 {
     switch (split) 
     {
+        //Origins splits
+        case "NML": 
+        flag_wait("activate_zone_nml");
+        break;
+
+        case "Boxes":
+            while(level.n_soul_boxes_completed < 4) wait 0.05;
+            wait 4;
+            break;
+            
+        case "Staff 1":
+        case "Staff 2":
+        case "Staff 3":
+        case "Staff 4":
+            curr = level.n_staffs_crafted;
+            while(curr <= level.n_staffs_crafted) wait 0.05;
+            //Change staff label?
+            break;
+
+        case "AFD":
+            flag_wait("ee_all_staffs_placed");
+            break;
+
+        //Mob splits
+        case "Dryer": 
+            flag_wait("dryer_cycle_active");
+            break;  
+
+        case "Gondola1":
+            flag_wait("fueltanks_found");
+            flag_wait("gondola_in_motion");
+            break;  
+            
+        case "Plane1":
+        case "Plane2":
+        case "Plane3":
+            flag_wait("plane_boarded");
+            break;  
+
+        case "Gondola2":
+        case "Gondola3":
+            flag_wait("gondola_in_motion");
+            break;  
+
+        case "Codes":
+            level waittill_multiple( "nixie_final_" + 386, "nixie_final_" + 481, "nixie_final_" + 101, "nixie_final_" + 872 );
+            break;  
+
+        case "Done":
+            wait 10;
+            while( isdefined(level.m_headphones) ) wait 0.05;
+            break;  
+
+        //Tranzit splits
         case "Jetgun": 
             while(level.sq_progress["rich"]["A_jetgun_built"] == 0) wait 0.05;
             break;
@@ -83,114 +136,14 @@ tranzit_wait_split( split )
             while(level.sq_progress["rich"]["A_jetgun_tower"] == 0) wait 0.05;
             break;
             
-        case "End":
+        case "EMP":
             while(level.sq_progress["rich"]["FINISHED"] == 0) wait 0.05;
             break;
-    }
 
-    return GetTime();     
-}
-
-origins_timer( split_list )
-{
-    foreach(split in split_list)
-        create_new_split(split, 65);
-    
-    flag_wait("initial_blackscreen_passed");
-
-    for(i = 0; i < split_list.size; i++)
-    {
-        unhide(split_list[i]);
-        time = origins_wait_split(split_list[i]);
-        split(split_list[i], time);
-    } 
-}
-
-origins_wait_split( split )
-{
-    switch (split) {
-    case "NML": 
-        flag_wait("activate_zone_nml");
-        break;
-
-    case "Boxes":
-        while(level.n_soul_boxes_completed < 4) wait 0.05;
-        wait 4;
-        break;
-        
-    case "Staff 1":
-    case "Staff 2":
-    case "Staff 3":
-    case "Staff 4":
-        curr = level.n_staffs_crafted;
-        while(curr <= level.n_staffs_crafted) wait 0.05;
-        //Change staff label?
-        break;
-
-    case "AFD":
-        flag_wait("ee_all_staffs_placed");
-        break;
-
-    case "End":
-        level waittill("end_game");
-        break;
-    }
-
-    return GetTime(); 
-}
-
-mob_timer( split_list )
-{
-    foreach(split in split_list)
-    {
-        create_new_split(split, 65);
-    }
-
-    flag_wait("initial_blackscreen_passed");
-
-    for(i = 0; i < split_list.size; i++)
-    {
-        unhide(split_list[i]);
-        time = mob_wait_split(split_list[i]);
-        split(split_list[i], time);
-    } 
-}
-
-mob_wait_split( split )
-{
-    switch (split) {
-    case "Dryer": 
-        flag_wait("dryer_cycle_active");
-        break;  
-
-    case "Gondola1":
-        flag_wait("fueltanks_found");
-        flag_wait("gondola_in_motion");
-        break;  
-        
-    case "Plane1":
-    case "Plane2":
-    case "Plane3":
-        flag_wait("plane_boarded");
-        break;  
-
-    case "Gondola2":
-    case "Gondola3":
-        flag_wait("gondola_in_motion");
-        break;  
-
-    case "Codes":
-        level waittill_multiple( "nixie_final_" + 386, "nixie_final_" + 481, "nixie_final_" + 101, "nixie_final_" + 872 );
-        break;  
-
-    case "End":
-        wait 10;
-        while( isdefined(level.m_headphones) ) wait 0.05;
-        break;  
-
-    case "Fight":
-        level waittill("end_game");
-        break;        
+        //General split
+        case "End":
+            level waittill("end_game");
+            break;  
     }
 
     return GetTime(); 
@@ -261,12 +214,12 @@ persistent_upgrades_bank()
 {
     pers_perks = strtok("board|revive|multikill_headshots|insta_kill|jugg|carpenter|perk_lose|pistol_points|double_points|sniper|box_weapon|nube", "|")
 
-    create_bool_dvar( "pers_insta_kill", 0 )
-    create_bool_dvar( "full_bank", 1 )
-    create_bool_dvar( "pers_cash_back", 1 )
+    create_bool_dvar( "pers_insta_kill", 0 );
+    create_bool_dvar( "full_bank", 1 );
+    create_bool_dvar( "pers_cash_back", 1 );
 
     foreach(pers_perk in pers_perks)
-        create_bool_dvar( "pers_" + pers_perk, 1 )
+        create_bool_dvar( "pers_" + pers_perk, 1 );
     
     foreach (pers_perk in pers_perks)
 	{
