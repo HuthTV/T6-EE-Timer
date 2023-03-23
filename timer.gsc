@@ -7,7 +7,7 @@
 init()
 {
     level.splits = [];
-    level.version = "v1.0";
+    level.ingame_timer_version = "V1.0";
     level.active_color = (0.82, 0.97, 0.97);
     level.complete_color = (0.01, 0.62, 0.74);
 
@@ -34,7 +34,7 @@ init()
     
     level thread on_player_connect();
     flag_wait("initial_blackscreen_passed");
-    level.timer_level_start_time = GetTime();
+    level.timer_level_start_time = gettime();
 }
 
 on_player_connect()
@@ -51,8 +51,8 @@ on_player_connect()
 on_player_spawned()
 {
     self waittill( "spawned_player" );
-    wait 2;
-    iPrintLn("EE Timer " + level.version + " | github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
+    wait 2.5;
+    self iPrintLn("^6GSC EE Autotimer ^5" + level.ingame_timer_version + " ^8| ^3github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
 }
 
 
@@ -91,7 +91,7 @@ wait_split( split )
         case "Staff 3":
         case "Staff 4":
             curr = level.n_staffs_crafted;
-            while(curr == level.n_staffs_crafted) wait 0.05;
+            while(curr == level.n_staffs_crafted && level.n_staffs_crafted < 4) wait 0.05;
             //Change staff label?
             break;
 
@@ -148,7 +148,7 @@ wait_split( split )
             break;  
     }
 
-    return GetTime(); 
+    return gettime(); 
 }
 
 split(split_name, time)
@@ -166,7 +166,7 @@ create_new_split(split_name, yoffset)
 {
     y = yoffset;
     y += (level.splits.size - 1) * 16;
-    level.splits[split_name] = newHudElem();
+    level.splits[split_name] = newhudelem();
     level.splits[split_name].alignx = "left";
     level.splits[split_name].aligny = "center";
     level.splits[split_name].horzalign = "left";
@@ -183,37 +183,37 @@ create_new_split(split_name, yoffset)
 
 set_split_label(split_name)
 {
-    switch (split_name) {
-    case "Jetgun": level.splits[split_name].label = &"^3Jetgun ^7"; break;
-    case "Tower": level.splits[split_name].label = &"^3Tower ^7"; break;
-    case "NML": level.splits[split_name].label = &"^3NML ^7"; break;
-    case "Boxes": level.splits[split_name].label = &"^3Boxes ^7"; break;
-    case "Staff 1": level.splits[split_name].label = &"^3Staff I ^7"; break;
-    case "Staff 2": level.splits[split_name].label = &"^3Staff II ^7"; break;
-    case "Staff 3": level.splits[split_name].label = &"^3Staff III ^7"; break;
-    case "Staff 4": level.splits[split_name].label = &"^3Staff IV ^7"; break;
-    case "AFD": level.splits[split_name].label = &"^3AFD ^7"; break;
-    case "Dryer": level.splits[split_name].label = &"^3Dryer ^7"; break;
-    case "Gondola1": level.splits[split_name].label = &"^3Gondola I ^7"; break;
-    case "Gondola2": level.splits[split_name].label = &"^3Gondola II ^7"; break;
-    case "Gondola3": level.splits[split_name].label = &"^3Gondola III ^7"; break;
-    case "Plane1": level.splits[split_name].label = &"^3Plane I ^7"; break;
-    case "Plane2": level.splits[split_name].label = &"^3Plane II ^7"; break;
-    case "Plane3": level.splits[split_name].label = &"^3Plane III ^7"; break;
-    case "Codes": level.splits[split_name].label = &"^3Codes ^7"; break;
-
-    case "Fight":
-    case "End": 
-    case "EMP":
-    case "Done":
-        level.splits[split_name].label = &"^3End ^7"; break;
+    switch (split_name) 
+    {
+        case "Jetgun": level.splits[split_name].label = &"^3Jetgun ^7"; break;
+        case "Tower": level.splits[split_name].label = &"^3Tower ^7"; break;
+        case "NML": level.splits[split_name].label = &"^3NML ^7"; break;
+        case "Boxes": level.splits[split_name].label = &"^3Boxes ^7"; break;
+        case "Staff 1": level.splits[split_name].label = &"^3Staff I ^7"; break;
+        case "Staff 2": level.splits[split_name].label = &"^3Staff II ^7"; break;
+        case "Staff 3": level.splits[split_name].label = &"^3Staff III ^7"; break;
+        case "Staff 4": level.splits[split_name].label = &"^3Staff IV ^7"; break;
+        case "AFD": level.splits[split_name].label = &"^3AFD ^7"; break;
+        case "Dryer": level.splits[split_name].label = &"^3Dryer ^7"; break;
+        case "Gondola1": level.splits[split_name].label = &"^3Gondola I ^7"; break;
+        case "Gondola2": level.splits[split_name].label = &"^3Gondola II ^7"; break;
+        case "Gondola3": level.splits[split_name].label = &"^3Gondola III ^7"; break;
+        case "Plane1": level.splits[split_name].label = &"^3Plane I ^7"; break;
+        case "Plane2": level.splits[split_name].label = &"^3Plane II ^7"; break;
+        case "Plane3": level.splits[split_name].label = &"^3Plane III ^7"; break;
+        case "Codes": level.splits[split_name].label = &"^3Codes ^7"; break;
+        case "Fight":
+        case "End": 
+        case "EMP":
+        case "Done":
+            level.splits[split_name].label = &"^3End ^7"; break;
     }
 }
 
 split_start_thread(split_name)
 {
     flag_wait("initial_blackscreen_passed");
-    level.splits[split_name] SetTenthsTimerUp(0.05);
+    level.splits[split_name] settenthstimerup(0.05);
 }
 
 persistent_upgrades_bank()
@@ -229,20 +229,20 @@ persistent_upgrades_bank()
     
     foreach (pers_perk in pers_perks)
 	{
-        if( getDvar( "pers_" + pers_perk ) )
+        if( getdvar( "pers_" + pers_perk ) )
         {
             self maps\mp\zombies\_zm_stats::set_global_stat(level.pers_upgrades[pers_perk].stat_names[0], level.pers_upgrades[pers_perk].stat_desired_values[0]);
             wait_network_frame();
         } 
 	}
     
-    if( getDvar( "pers_cash_back" ))
+    if( getdvar( "pers_cash_back" ))
     {
         self maps\mp\zombies\_zm_stats::set_global_stat(level.pers_upgrades["cash_back"].stat_names[0], level.pers_upgrades["cash_back"].stat_desired_values[0]);
         self maps\mp\zombies\_zm_stats::set_global_stat(level.pers_upgrades["cash_back"].stat_names[1], level.pers_upgrades["cash_back"].stat_desired_values[1]);
     }
 
-    bank_points = (getDvarInt("full_bank") > 0) * 250;
+    bank_points = (getdvarint("full_bank") > 0) * 250;
 	if(bank_points)
 	{
 		self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", bank_points, level.banking_map);
@@ -286,6 +286,6 @@ game_time_string( duration )
 
 create_bool_dvar( dvar, start_val )
 {
-    if( getDvar( dvar ) == "" ) 
-		setDvar( dvar, (1 * isDefined(start_val)) );
+    if( getdvar( dvar ) == "" ) 
+		setdvar( dvar, (1 * isdefined(start_val)) );
 }
