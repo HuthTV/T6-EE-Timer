@@ -7,12 +7,12 @@
 init()
 {
     level.splits = [];
-    level.ingame_timer_version = "V1.0";
+    level.ingame_timer_version = "V1.1";
     level.active_color = (0.82, 0.97, 0.97);
     level.complete_color = (0.01, 0.62, 0.74);
 
     solo = level.is_forever_solo_game;
-
+    
     if(is_origins())
     {
         if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|"), 125);
@@ -26,6 +26,7 @@ init()
     else if(is_tranzit())
     {
         if(solo)    level thread timer( strtok("Jetgun|Tower|EMP", "|"), 15);
+        level thread upgrades();
     }
     else
     {
@@ -43,18 +44,40 @@ on_player_connect()
     while(true)
     {
         level waittill( "connected", player );
-        player thread on_player_spawned(); 
-        player thread persistent_upgrades_bank();
+        player thread on_player_spawned();
     }
 }
 
 on_player_spawned()
 {
     self waittill( "spawned_player" );
+    self thread persistent_upgrades_bank();
     wait 2.5;
     self iPrintLn("^6GSC EE Autotimer ^5" + level.ingame_timer_version + " ^8| ^3github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
 }
 
+upgrades()
+{
+    level.persistent_upgrades = [];
+    
+    foreach(upgrade in level.pers_upgrades)
+    {
+        for(i = 0; i < upgrade.stat_names.size; i++)
+        { 
+            level.persistent_upgrades[level.persistent_upgrades.size] = upgrade.stat_names[i];
+            print("stat: added " + upgrade.stat_names[i]);
+        }
+    }
+  
+    create_bool_dvar( "pers_insta_kill", 0 );
+    create_bool_dvar( "full_bank", 1 );
+
+    foreach(pers_perk in level.persistent_upgrades)
+	{
+        if(pers_perk != "pers_insta_kill")
+            create_bool_dvar( pers_perk, 1 );
+	}
+}
 
 timer( split_list, yoffset )
 {
@@ -218,28 +241,17 @@ split_start_thread(split_name)
 
 persistent_upgrades_bank()
 {
-    pers_perks = strtok("board|revive|multikill_headshots|insta_kill|jugg|carpenter|perk_lose|pistol_points|double_points|sniper|box_weapon|nube", "|")
-
-    create_bool_dvar( "pers_insta_kill", 0 );
-    create_bool_dvar( "full_bank", 1 );
-    create_bool_dvar( "pers_cash_back", 1 );
-
-    foreach(pers_perk in pers_perks)
-        create_bool_dvar( "pers_" + pers_perk, 1 );
-    
-    foreach (pers_perk in pers_perks)
-	{
-        if( getdvar( "pers_" + pers_perk ) )
-        {
-            self maps\mp\zombies\_zm_stats::set_global_stat(level.pers_upgrades[pers_perk].stat_names[0], level.pers_upgrades[pers_perk].stat_desired_values[0]);
-            wait_network_frame();
-        } 
-	}
-    
-    if( getdvar( "pers_cash_back" ))
+    foreach(upgrade in level.pers_upgrades)
     {
-        self maps\mp\zombies\_zm_stats::set_global_stat(level.pers_upgrades["cash_back"].stat_names[0], level.pers_upgrades["cash_back"].stat_desired_values[0]);
-        self maps\mp\zombies\_zm_stats::set_global_stat(level.pers_upgrades["cash_back"].stat_names[1], level.pers_upgrades["cash_back"].stat_desired_values[1]);
+        for(i = 0; i < upgrade.stat_names.size; i++)
+        {
+            val = 0;
+            if(getDvarInt(upgrade.stat_names[i]))
+                val = upgrade.stat_desired_values[i];
+
+            self maps\mp\zombies\_zm_stats::set_client_stat(upgrade.stat_names[i], val);
+            wait_network_frame();
+        }
     }
 
     bank_points = (getdvarint("full_bank") > 0) * 250;
@@ -287,5 +299,5 @@ game_time_string( duration )
 create_bool_dvar( dvar, start_val )
 {
     if( getdvar( dvar ) == "" ) 
-		setdvar( dvar, (1 * isdefined(start_val)) );
+		setdvar( dvar, start_val);
 }
