@@ -11,7 +11,7 @@ init()
     level.eet_complete_color = (0.01, 0.62, 0.74);
 
     solo = level.is_forever_solo_game;
-    
+
     if(is_map("zm_transit"))
     {
         if(solo)    level thread timer( strtok("Jetgun|Tower|EMP", "|"), 15);
@@ -230,11 +230,11 @@ upgrade_dvars()
             level.eet_upgrades[level.eet_upgrades.size] = stat_name;
     }
   
-    create_bool_dvar( "full_bank", 1 );
-    create_bool_dvar( "pers_insta_kill", 0 );
+    create_bool_dvar("full_bank", 1);
+    create_bool_dvar("pers_insta_kill", !is_map("zm_transit"));
     
     foreach(pers_perk in level.eet_upgrades)
-        create_bool_dvar( pers_perk, 1 );
+        create_bool_dvar(pers_perk, 1);
 }
 
 upgrades_bank()
@@ -283,8 +283,8 @@ create_bool_dvar( dvar, start_val )
     if(getdvar(dvar) == "") setdvar(dvar, start_val);
 }
 
-is_map( map_string )
+is_map(map)
 {
-    if(map_string == "zm_transit") return level.scr_zm_ui_gametype_group == "zclassic";
-    return level.script == map_string;
+    if(!(map == "zm_transit")) return level.script == map;
+    return level.script == map && level.scr_zm_ui_gametype_group == "zclassic";   
 }
