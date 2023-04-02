@@ -6,7 +6,7 @@
 
 init()
 {
-    level.eet_version = "V1.1";
+    level.eet_version = "V1.2";
     level.eet_active_color = (0.82, 0.97, 0.97);
     level.eet_complete_color = (0.01, 0.62, 0.74);
 
@@ -14,7 +14,7 @@ init()
 
     if(is_map("zm_transit"))
     {
-        if(solo)    level thread timer( strtok("Jetgun|Tower|EMP", "|"), 15);
+        if(solo)    level thread timer( strtok("Jetgun|Tower|EMP", "|"), 0);
         //else tranzit branching timer timer
     }
     else if(is_map("zm_highrise"))
@@ -23,8 +23,8 @@ init()
     }
     else if(is_map("zm_prison"))
     {
-        if(solo)    level thread timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|Done", "|"), 65);
-        else        level thread timer( strtok("Plane1|Plane2|Plane3|Codes|End", "|"), 65);
+        if(solo)    level thread timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|Done", "|"), 50);
+        else        level thread timer( strtok("COOPlane1|COOPlane2|COOPlane3|Codes|Fight", "|"), 50);
     }
     else if(is_map("zm_buried"))
     {
@@ -32,8 +32,8 @@ init()
     }
     else if(is_map("zm_tomb"))
     {
-        if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|"), 125);
-        else        level thread timer( strtok("Boxes|AFD|End", "|"), 125 );
+        if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|End", "|"), 110);
+        else        level thread timer( strtok("Boxes|AFD|End", "|"), 110 );
     }
     else
     {
@@ -81,7 +81,7 @@ timer( split_list, y_offset )
 create_new_split(split_name, y_offset)
 {
     y = y_offset;
-    y += (level.eet_splits.size - 1) * 16;
+    if(isdefined(level.eet_splits)) y += level.eet_splits.size * 16;
     level.eet_splits[split_name] = newhudelem();
     level.eet_splits[split_name].alignx = "left";
     level.eet_splits[split_name].aligny = "center";
@@ -120,15 +120,18 @@ set_split_label(split_name)
         case "Gondola1": level.eet_splits[split_name].label = &"^3Gondola I ^7"; break;
         case "Gondola2": level.eet_splits[split_name].label = &"^3Gondola II ^7"; break;
         case "Gondola3": level.eet_splits[split_name].label = &"^3Gondola III ^7"; break;
+        case "COOPlane1":
         case "Plane1": level.eet_splits[split_name].label = &"^3Plane I ^7"; break;
+        case "COOPlane2":
         case "Plane2": level.eet_splits[split_name].label = &"^3Plane II ^7"; break;
+        case "COOPlane3":
         case "Plane3": level.eet_splits[split_name].label = &"^3Plane III ^7"; break;
         case "Codes": level.eet_splits[split_name].label = &"^3Codes ^7"; break;
         case "Fight":
         case "End": 
         case "EMP":
         case "Done":
-            level.eet_splits[split_name].label = &"^3End ^7"; break;
+            level.eet_splits[split_name].label = &"^3End ^7"; break;       
     }
 }
 
@@ -178,17 +181,21 @@ wait_split(split)
         case "Gondola1":
             flag_wait("fueltanks_found");
             flag_wait("gondola_in_motion");
-            break;  
-            
-        case "Plane1":
-        case "Plane2":
-        case "Plane3":
-            flag_wait("plane_boarded");
-            break;  
+            break;
 
         case "Gondola2":
         case "Gondola3":
             flag_wait("gondola_in_motion");
+            break;
+
+        case "COOPlane2":
+        case "COOPlane3":
+            flag_wait("spawn_fuel_tanks");
+        case "COOPlane1":
+        case "Plane1":
+        case "Plane2":
+        case "Plane3":
+            flag_wait("plane_boarded");
             break;  
 
         case "Codes":
@@ -199,6 +206,11 @@ wait_split(split)
             wait 10;
             while( isdefined(level.m_headphones) ) wait 0.05;
             break;  
+
+        case "Fight":
+            level waittill("showdown_over");
+            wait 2;
+            break;
 
         //Tranzit splits
         case "Jetgun": 
@@ -216,7 +228,7 @@ wait_split(split)
         //General split
         case "End":
             level waittill("end_game");
-            break;  
+            break;
     }
 
     return gettime(); 
