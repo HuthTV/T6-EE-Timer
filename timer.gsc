@@ -8,23 +8,25 @@ init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return;
 
-    level.eet_version = "V1.3 - WIP";
+    level.eet_version = "V1.3";
     level.eet_active_color = (0.82, 0.97, 0.97);
     level.eet_complete_color = (0.01, 0.62, 0.74);
     level thread on_player_connect();
     if(upgrades_active()) level thread upgrade_dvars();
 
     flag_wait( "initial_players_connected" );
-    solo = (level.players.size == 1);
+    solo = level.players.size == 1;
 
     switch (level.script)
     {
         case "zm_transit":
             if(solo)    level thread timer( strtok("Jetgun|Tower|EMP", "|"), 0, 0);
+            else        level thread timer( array("tranzit_end"), 0, 0);
             //else        level thread branching_timer( strtok("Power|branch_split", "|"), strtok("corpse|flings", "|"), strtok("corpse|flings", "|"), 0);
             break;
 
         case "zm_highrise":
+            level thread timer( array("highrise_end"), 0, 0);
             //level thread branching_timer( strtok("Power|Elevators|Symbols|sniper|branch_split", "|"), strtok("corpse|flings", "|"), strtok("corpse|flings", "|"), 0);
             break;
 
@@ -34,11 +36,12 @@ init()
             break;
 
         case "zm_buried":
+            level thread timer( array("buried_end"), 0, 0);
             //level thread branching_timer( strtok("Paralyzer|balls|targets|branch_split", "|"), strtok("Jetgun|Tower|EMP", "|"), strtok("Jetgun|Tower|EMP", "|"), 0);
             break;
 
         case "zm_tomb":
-            if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|Freedom", "|"), 110, 0);
+            if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|Rain Fire|Freedom", "|"), 110, 0);
             else        level thread timer( strtok("Boxes|AFD|Freedom", "|"), 110, 0);
             break;
     }
@@ -137,8 +140,11 @@ set_split_label(split_name)
         case "Jetgun": level.eet_splits[split_name].label = &"^3Jetgun ^7"; break;
         case "Tower": level.eet_splits[split_name].label = &"^3Tower ^7"; break;
         case "NML": level.eet_splits[split_name].label = &"^3NML ^7"; break;
+        case "tranzit_end": level.eet_splits[split_name].label = &"^3Tranzit end ^7"; break;
+
 
         //Die Rise
+        case "highrise_end": level.eet_splits[split_name].label = &"^3Die Rise end ^7"; break;
 
         //Mob of the Dead
         case "Dryer": level.eet_splits[split_name].label = &"^3Dryer ^7"; break;
@@ -154,6 +160,7 @@ set_split_label(split_name)
         case "Codes": level.eet_splits[split_name].label = &"^3Codes ^7"; break;
 
         //Buried
+        case "buried_end": level.eet_splits[split_name].label = &"^3Buried end ^7"; break;
 
         //Origins
         case "Boxes": level.eet_splits[split_name].label = &"^3Boxes ^7"; break;
@@ -161,6 +168,7 @@ set_split_label(split_name)
         case "Staff 2": level.eet_splits[split_name].label = &"^3Staff II ^7"; break;
         case "Staff 3": level.eet_splits[split_name].label = &"^3Staff III ^7"; break;
         case "Staff 4": level.eet_splits[split_name].label = &"^3Staff IV ^7"; break;
+        case "Rain Fire": level.eet_splits[split_name].label = &"^3Rain Fire ^7"; break;
         case "AFD": level.eet_splits[split_name].label = &"^3AFD ^7"; break;
 
         //End splits
@@ -213,7 +221,16 @@ wait_split(split)
             while(level.sq_progress["rich"]["FINISHED"] == 0) wait 0.05;
             break;
 
+        case "tranzit_end":
+            level waittill("transit_sidequest_achived");
+            break;
+
+
+
         //Die Rise splits
+        case "highrise_end":
+            level waittill("highrise_sidequest_achieved");
+            break;
 
         //Mob splits
         case "Dryer":
@@ -255,6 +272,9 @@ wait_split(split)
             break;
 
         //Buried splits
+        case "buried_end":
+            level waittill("buried_sidequest_achived");
+            break;
 
         //Origins splits
         case "NML":
@@ -275,13 +295,17 @@ wait_split(split)
             //Change staff label?
             break;
 
+        case "Rain Fire":
+            flag_wait("ee_mech_zombie_hole_opened");
+            break;
+
         case "AFD":
             flag_wait("ee_all_staffs_placed");
             break;
 
         //Origins end
         case "Freedom":
-            while(!isdefined(level.sndgameovermusicoverride)) wait 0.05;
+            flag_wait( "ee_samantha_released" );
             level waittill("end_game");
             break;
     }
@@ -298,7 +322,7 @@ upgrade_dvars()
     }
 
     create_bool_dvar("full_bank", 1);
-    create_bool_dvar("pers_insta_kill", !is_map("zm_transit"));
+    create_bool_dvar("pers_insta_kill", level.script != "zm_transit");
 
     foreach(pers_perk in level.eet_upgrades)
         create_bool_dvar(pers_perk, 1);
