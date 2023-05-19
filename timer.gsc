@@ -8,7 +8,7 @@ init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return;
 
-    level.eet_version = "V1.3";
+    level.eet_version = "V1.4";
     level.eet_active_color = (0.82, 0.97, 0.97);
     level.eet_complete_color = (0.01, 0.62, 0.74);
     level thread on_player_connect();
@@ -16,6 +16,7 @@ init()
 
     flag_wait( "initial_players_connected" );
     solo = level.players.size == 1;
+    level thread coop_restart();
 
     switch (level.script)
     {
@@ -44,6 +45,24 @@ init()
             if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|Rain Fire|Freedom", "|"), 110, 0);
             else        level thread timer( strtok("Boxes|AFD|Freedom", "|"), 110, 0);
             break;
+    }
+}
+
+coop_restart()
+{
+    while(true)
+    {
+        level waittill("say", message, player);
+
+        msg = tolower(message);
+
+        switch (msg)
+        {
+            case "r":
+            case "restart":
+            case "fast_restart":
+                map_restart();
+        }
     }
 }
 
@@ -339,6 +358,7 @@ upgrades_bank()
         }
     }
 
+    flag_wait("initial_blackscreen_passed");
     if(getdvarint("full_bank"))
     {
         self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
