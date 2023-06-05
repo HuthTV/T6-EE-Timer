@@ -8,62 +8,51 @@ init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return;
 
-    level.eet_version = "V1.4";
+    level.eet_version = "V2.0";
+    level.eet_side = "none";
+    level.eet_split = 0;
+    level.y_offset = 0;
     level.eet_active_color = (0.82, 0.97, 0.97);
     level.eet_complete_color = (0.01, 0.62, 0.74);
+
     level thread on_player_connect();
+    level thread chat_restart();
     if(upgrades_active()) level thread upgrade_dvars();
 
     flag_wait( "initial_players_connected" );
     solo = level.players.size == 1;
-    level thread coop_restart();
 
     switch (level.script)
     {
         case "zm_transit":
-            if(solo)    level thread timer( strtok("Jetgun|Tower|EMP", "|"), 0, 0);
-            else        level thread timer( array("tranzit_end"), 0, 0);
-            //else        level thread branching_timer( strtok("Power|branch_split", "|"), strtok("corpse|flings", "|"), strtok("corpse|flings", "|"), 0);
+            if(solo)   level.split_list = strtok("jetgun|tower|EMP", "|");
+            else       level.split_list =  array("jetgun_power_off");
             break;
 
         case "zm_highrise":
-            level thread timer( array("highrise_end"), 0, 0);
-            //level thread branching_timer( strtok("Power|Elevators|Symbols|sniper|branch_split", "|"), strtok("corpse|flings", "|"), strtok("corpse|flings", "|"), 0);
+            if(solo)   level.split_list = array("highrise_end");
+            else       level.split_list = array("highrise_end");
             break;
 
         case "zm_prison":
-            if(solo)    level thread timer( strtok("Dryer|Gondola1|Plane1|Gondola2|Plane2|Gondola3|Plane3|Codes|Done", "|"), 50, 0);
-            else        level thread timer( strtok("COOP_Plane1|COOP_Plane2|COOP_Plane3|Codes|Fight", "|"), 50, 0);
+            level.y_offset = 50;
+            if(solo)   level.split_list = strtok("dryer|gondola_1|plane_1|gondola_2|plane_2|gondola_3|plane_3|codes|headphones", "|");
+            else       level.split_list = strtok("COOP_plane_1|COOP_plane_2|COOP_plane_3|codes|fight", "|");
             break;
 
         case "zm_buried":
-            level thread timer( array("buried_end"), 0, 0);
-            //level thread branching_timer( strtok("Paralyzer|balls|targets|branch_split", "|"), strtok("Jetgun|Tower|EMP", "|"), strtok("Jetgun|Tower|EMP", "|"), 0);
+            level.split_list = strtok("cipher|time_travel|sharpshooter", "|");
             break;
 
         case "zm_tomb":
-            if(solo)    level thread timer( strtok("NML|Boxes|Staff 1|Staff 2|Staff 3|Staff 4|AFD|Rain Fire|Freedom", "|"), 110, 0);
-            else        level thread timer( strtok("Boxes|AFD|Freedom", "|"), 110, 0);
+            level.y_offset = 110;
+            if(solo)    level.split_list = strtok("NML|boxes|staff_1|staff_2|staff_3|staff_4|AFD|rain_fire|freedom", "|");
+            else        level.split_list = strtok("boxes|AFD|freedom", "|");
             break;
     }
-}
 
-coop_restart()
-{
-    while(true)
-    {
-        level waittill("say", message, player);
-
-        msg = tolower(message);
-
-        switch (msg)
-        {
-            case "r":
-            case "restart":
-            case "fast_restart":
-                map_restart();
-        }
-    }
+    create_timer();
+    run_splits();
 }
 
 on_player_connect()
@@ -84,142 +73,112 @@ on_player_spawned()
     self iPrintLn("^6GSC EE Autotimer ^5" + level.eet_version + " ^8| ^3github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
 }
 
-timer( split_list, y_offset, branching )
+run_splits()
+{
+
+    split_loop();
+
+    if(level.eet_side == "richtofen")
+    {
+        switch(level.script)
+        {
+            case "zm_transit": richtofen_splits = array("tower", "EMP"); break;
+        }
+
+        foreach(split in richtofen_splits)
+            level.split_list[level.split_list.size] = split;
+
+        split_loop();
+    }
+    else if(level.eet_side == "maxis")
+    {
+        switch(level.script)
+        {
+            case "zm_transit":  maxis_splits = array("turbines"); break;
+        }
+
+        foreach(split in maxis_splits)
+            level.split_list[level.split_list.size] = split;
+
+        split_loop();
+    }
+}
+
+split_loop()
 {
     level endon( "game_ended" );
 
-    foreach(split in split_list)
-        create_new_split(split, y_offset);
-
-    if(!isdefined(level.eet_start_time))
+    for(i = level.eet_split; i < level.split_list.size; i++)
     {
-        flag_wait("initial_blackscreen_passed");
-        level.eet_start_time = gettime();
-    }
-
-    for(i = 0; i < split_list.size - branching; i++)
-    {
-        split = split_list[i];
-        unhide(split);
+        set_label(level.eet_timer, level.split_list[i]);
+        level.eet_timer.alpha = 0.8 * (level.eet_split != 0);
+        split = level.split_list[i];
         split(split, wait_split(split));
     }
 }
 
-branching_timer( common_split_list, richtofen_split_list, maxis_split_list, y_offset)
-{
-    level endon( "game_ended" );
-    branch_split_list = [];
-
-    timer( common_split_list, y_offset, 1);
-
-    branch_split = common_split_list[common_split_list.size];
-    path = wait_branch_split(branch_split);
-    set_split_label(branch_split + "_" + path);
-    split(branch_split);
-
-    switch(path)
-    {
-        case "richtofen":   branch_split_list = richtofen_split_list; break;
-        case "maxis":       branch_split_list = maxis_split_list; break;
-    }
-
-    timer( branch_split_list, y_offset, 0);
-}
-
-create_new_split(split_name, y_offset)
-{
-    y = y_offset;
-    if(isdefined(level.eet_splits)) y += level.eet_splits.size * 16;
-    level.eet_splits[split_name] = newhudelem();
-    level.eet_splits[split_name].alignx = "left";
-    level.eet_splits[split_name].aligny = "center";
-    level.eet_splits[split_name].horzalign = "left";
-    level.eet_splits[split_name].vertalign = "top";
-    level.eet_splits[split_name].x = -62;
-    level.eet_splits[split_name].y = -34 + y;
-    level.eet_splits[split_name].fontscale = 1.4;
-    level.eet_splits[split_name].hidewheninmenu = 1;
-    level.eet_splits[split_name].alpha = 0;
-    level.eet_splits[split_name].color = level.eet_active_color;
-    level thread split_start_thread(split_name);
-    set_split_label(split_name);
-}
-
-split_start_thread(split_name)
-{
-    flag_wait("initial_blackscreen_passed");
-    level.eet_splits[split_name] settenthstimerup(0.05);
-}
-
-set_split_label(split_name)
-{
-    switch (split_name)
-    {
-        //Tranzit
-        case "Jetgun": level.eet_splits[split_name].label = &"^3Jetgun ^7"; break;
-        case "Tower": level.eet_splits[split_name].label = &"^3Tower ^7"; break;
-        case "NML": level.eet_splits[split_name].label = &"^3NML ^7"; break;
-        case "tranzit_end": level.eet_splits[split_name].label = &"^3Tranzit end ^7"; break;
-
-
-        //Die Rise
-        case "highrise_end": level.eet_splits[split_name].label = &"^3Die Rise end ^7"; break;
-
-        //Mob of the Dead
-        case "Dryer": level.eet_splits[split_name].label = &"^3Dryer ^7"; break;
-        case "Gondola1": level.eet_splits[split_name].label = &"^3Gondola I ^7"; break;
-        case "Gondola2": level.eet_splits[split_name].label = &"^3Gondola II ^7"; break;
-        case "Gondola3": level.eet_splits[split_name].label = &"^3Gondola III ^7"; break;
-        case "COOP_Plane1":
-        case "Plane1": level.eet_splits[split_name].label = &"^3Plane I ^7"; break;
-        case "COOP_Plane2":
-        case "Plane2": level.eet_splits[split_name].label = &"^3Plane II ^7"; break;
-        case "COOP_Plane3":
-        case "Plane3": level.eet_splits[split_name].label = &"^3Plane III ^7"; break;
-        case "Codes": level.eet_splits[split_name].label = &"^3Codes ^7"; break;
-
-        //Buried
-        case "buried_end": level.eet_splits[split_name].label = &"^3Buried end ^7"; break;
-
-        //Origins
-        case "Boxes": level.eet_splits[split_name].label = &"^3Boxes ^7"; break;
-        case "Staff 1": level.eet_splits[split_name].label = &"^3Staff I ^7"; break;
-        case "Staff 2": level.eet_splits[split_name].label = &"^3Staff II ^7"; break;
-        case "Staff 3": level.eet_splits[split_name].label = &"^3Staff III ^7"; break;
-        case "Staff 4": level.eet_splits[split_name].label = &"^3Staff IV ^7"; break;
-        case "Rain Fire": level.eet_splits[split_name].label = &"^3Rain Fire ^7"; break;
-        case "AFD": level.eet_splits[split_name].label = &"^3AFD ^7"; break;
-
-        //End splits
-        case "Fight":
-        case "Freedom":
-        case "EMP":
-        case "Done":
-            level.eet_splits[split_name].label = &"^3End ^7"; break;
-    }
-}
-
-unhide(split_name)
-{
-    level.eet_splits[split_name].alpha = 0.8;
-}
-
 split(split_name, time)
 {
-    level.eet_splits[split_name].color = level.eet_complete_color;
-    level.eet_splits[split_name] settext(game_time_string(time - level.eet_start_time));
+    split = newhudelem();
+    split.alignx = "left";
+    split.aligny = "center";
+    split.horzalign = "left";
+    split.vertalign = "top";
+    split.x = -62;
+    split.y = -34 + level.y_offset + level.eet_split * 16;
+    split.fontscale = 1.4;
+    split.hidewheninmenu = 1;
+    split.alpha = 0.8;
+    split.color = level.eet_complete_color;
+    if(level.eet_side != "none")
+        split_name = split_name + "_" + level.eet_side;
+    set_label(split, split_name);
+    split settext(game_time_string(time - level.eet_start_time));
+
+    level.eet_split++;
+    level.eet_timer.y += 16;
+    level.eet_timer.alpha = 0;
 }
 
-wait_branch_split(split)
+create_timer()
 {
-    switch (split)
+    level.eet_timer = newhudelem();
+    level.eet_timer.alignx = "left";
+    level.eet_timer.aligny = "center";
+    level.eet_timer.horzalign = "left";
+    level.eet_timer.vertalign = "top";
+    level.eet_timer.x = -62;
+    level.eet_timer.y = -34 + level.y_offset;
+    level.eet_timer.fontscale = 1.4;
+    level.eet_timer.hidewheninmenu = 1;
+    level.eet_timer.alpha = 0;
+    level.eet_timer.color = level.eet_active_color;
+    level thread timer_start_thread();
+}
+
+timer_start_thread()
+{
+    flag_wait("initial_blackscreen_passed");
+    level.eet_start_time = gettime();
+    level.eet_timer settenthstimerup(0.05);
+    level.eet_timer.alpha = 0.8;
+}
+
+chat_restart()
+{
+    while(true)
     {
-        case "Tranzit":
-            return "rictofen";
-        case "Die_Rise":
-            return "maxis";
-        case "Buried":
-            return "rictofen";
+        level waittill("say", message, player);
+
+        msg = tolower(message);
+
+        switch (msg)
+        {
+            case "r":
+            case "restart":
+            case "fast_restart":
+                map_restart();
+        }
     }
 }
 
@@ -228,11 +187,34 @@ wait_split(split)
     switch (split)
     {
         //Tranzit splits
-        case "Jetgun":
+        case "jetgun_power_off":
+            level waittill( "power_event_complete" );
+            split = false;
+            while(!split)
+            {
+                if( level.sq_progress["rich"]["A_jetgun_built"] > 0 )
+                {
+                    split = true;
+                    level.eet_side = "richtofen";
+                    continue;
+                }
+
+                if( level.power_event_in_progress )
+                {
+                    split = true;
+                    level.eet_side = "maxis";
+                    continue;
+                }
+
+                wait 0.05;
+            }
+            break;
+
+        case "jetgun":
             while(level.sq_progress["rich"]["A_jetgun_built"] == 0) wait 0.05;
             break;
 
-        case "Tower":
+        case "tower":
             while(level.sq_progress["rich"]["A_jetgun_tower"] == 0) wait 0.05;
             break;
 
@@ -240,11 +222,9 @@ wait_split(split)
             while(level.sq_progress["rich"]["FINISHED"] == 0) wait 0.05;
             break;
 
-        case "tranzit_end":
-            level waittill("transit_sidequest_achived");
+        case "turbines":
+            while(level.sq_progress["maxis"]["FINISHED"] == 0) wait 0.05;
             break;
-
-
 
         //Die Rise splits
         case "highrise_end":
@@ -252,69 +232,77 @@ wait_split(split)
             break;
 
         //Mob splits
-        case "Dryer":
+        case "dryer":
             flag_wait("dryer_cycle_active");
             break;
 
-        case "Gondola1":
+        case "gondola_1":
             flag_wait("fueltanks_found");
             flag_wait("gondola_in_motion");
             break;
 
-        case "Gondola2":
-        case "Gondola3":
+        case "gondola_2":
+        case "gondola_3":
             flag_wait("gondola_in_motion");
             break;
 
-        case "COOP_Plane2":
-        case "COOP_Plane3":
+        case "COOP_plane_2":
+        case "COOP_plane_3":
             flag_wait("spawn_fuel_tanks");
-        case "COOP_Plane1":
-        case "Plane1":
-        case "Plane2":
-        case "Plane3":
+        case "COOP_plane_1":
+        case "plane_1":
+        case "plane_2":
+        case "plane_3":
             flag_wait("plane_boarded");
             break;
 
-        case "Codes":
+        case "codes":
             level waittill_multiple( "nixie_final_" + 386, "nixie_final_" + 481, "nixie_final_" + 101, "nixie_final_" + 872 );
             break;
 
-        case "Done":
+        case "done":
             wait 10;
             while( isdefined(level.m_headphones) ) wait 0.05;
             break;
 
-        case "Fight":
+        case "fight":
             level waittill("showdown_over");
             wait 2;
             break;
 
         //Buried splits
-        case "buried_end":
+        case "cipher":
+            wait_for_buildable( "buried_sq_oillamp" );
+            break;
+
+        case "time_travel":
+            while( !flag("sq_tpo_special_round_active") && !flag("sq_wisp_saved_with_time_bomb") ) wait 0.05;
+            break;
+
+        case "sharpshooter":
             level waittill("buried_sidequest_achived");
             break;
 
         //Origins splits
         case "NML":
-        flag_wait("activate_zone_nml");
-        break;
+            flag_wait("activate_zone_nml");
+            break;
 
-        case "Boxes":
+        case "boxes":
             while(level.n_soul_boxes_completed < 4) wait 0.05;
             wait 4.3;
             break;
 
-        case "Staff 1":
-        case "Staff 2":
-        case "Staff 3":
-        case "Staff 4":
+        case "staff_1":
+        case "staff_2":
+        case "staff_3":
+        case "staff_4":
             curr = level.n_staffs_crafted;
             while(curr == level.n_staffs_crafted && level.n_staffs_crafted < 4) wait 0.05;
             //Change staff label?
             break;
 
-        case "Rain Fire":
+        case "rain_fire":
             flag_wait("ee_mech_zombie_hole_opened");
             break;
 
@@ -322,14 +310,67 @@ wait_split(split)
             flag_wait("ee_all_staffs_placed");
             break;
 
-        //Origins end
-        case "Freedom":
+        case "freedom":
             flag_wait( "ee_samantha_released" );
             level waittill("end_game");
             break;
     }
 
     return gettime();
+}
+
+set_label(elem, split_name)
+{
+    switch (split_name)
+    {
+        //Tranzit
+        case "jetgun": elem.label = &"^3Jetgun ^7"; break;
+        case "tower_richtofen":
+        case "tower": elem.label = &"^3Tower ^7"; break;
+        case "EMP_richtofen":
+        case "EMP": elem.label = &"^3Lights ^7"; break;
+        case "turbines_maxis":
+        case "turbines": elem.label = &"^3Turbines ^7"; break;
+        case "jetgun_power_off": elem.label = &"^3Power off/Jetgun ^7"; break;
+        case "jetgun_power_off_maxis": elem.label = &"^3Power off ^7"; break;
+        case "jetgun_power_off_richtofen": elem.label = &"^3Jetgun ^7"; break;
+
+        //Die Rise
+        case "highrise_end": elem.label = &"^3High Maintenance ^7"; break;
+
+        //Mob of the Dead
+        case "dryer": elem.label = &"^3Dryer ^7"; break;
+        case "gondola_1": elem.label = &"^3Gondola I ^7"; break;
+        case "gondola_2": elem.label = &"^3Gondola II ^7"; break;
+        case "gondola_3": elem.label = &"^3Gondola III ^7"; break;
+        case "COOP_plane_1":
+        case "plane_1": elem.label = &"^3Plane I ^7"; break;
+        case "COOP_plane_2":
+        case "plane_2": elem.label = &"^3Plane II ^7"; break;
+        case "COOP_plane_3":
+        case "plane_3": elem.label = &"^3Plane III ^7"; break;
+        case "codes": elem.label = &"^3Codes ^7"; break;
+        case "headphones": elem.label = &"^3Headphones ^7"; break;
+        case "fight": elem.label = &"^3Fight ^7"; break;
+
+        //Buried
+        case "cipher": elem.label = &"^3Cipher ^7"; break;
+        case "time_travel": elem.label = &"^3Time travel ^7"; break;
+        case "sharpshooter": elem.label = &"^3Sharpshooter ^7"; break;
+
+        //Origins
+        case "NML": elem.label = &"^3NML ^7"; break;
+        case "boxes": elem.label = &"^3Boxes ^7"; break;
+        case "staff_1": elem.label = &"^3Staff I ^7"; break;
+        case "staff_2": elem.label = &"^3Staff II ^7"; break;
+        case "staff_3": elem.label = &"^3Staff III ^7"; break;
+        case "staff_4": elem.label = &"^3Staff IV ^7"; break;
+        case "AFD": elem.label = &"^3AFD ^7"; break;
+        case "rain_fire": elem.label = &"^3Rain Fire ^7"; break;
+        case "freedom": elem.label = &"^3Freedom ^7"; break;
+
+        case "done": elem.label = &"^3End ^7"; break;
+    }
 }
 
 upgrade_dvars()
@@ -366,6 +407,11 @@ upgrades_bank()
     }
 }
 
+upgrades_active()
+{
+    return maps\mp\zombies\_zm_pers_upgrades::is_pers_system_active();
+}
+
 game_time_string(duration)
 {
     total_sec = int(duration / 1000);
@@ -382,11 +428,6 @@ game_time_string(duration)
     else                    { time_string += "0" + remaining_ms; }
 
     return time_string;
-}
-
-upgrades_active()
-{
-    return maps\mp\zombies\_zm_pers_upgrades::is_pers_system_active();
 }
 
 create_bool_dvar( dvar, start_val )
