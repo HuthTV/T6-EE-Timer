@@ -8,7 +8,7 @@ init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return;
 
-    level.eet_version = "V2.0";
+    level.eet_version = "V2.1";
     level.eet_side = "none";
     level.eet_split = 0;
     level.y_offset = 0;
@@ -41,7 +41,7 @@ init()
             break;
 
         case "zm_buried":
-            level.split_list = strtok("cipher|time_travel|sharpshooter", "|");
+            level.split_list = strtok("cipher|sharpshooter", "|");
             break;
 
         case "zm_tomb":
@@ -260,7 +260,7 @@ wait_split(split)
             level waittill_multiple( "nixie_final_" + 386, "nixie_final_" + 481, "nixie_final_" + 101, "nixie_final_" + 872 );
             break;
 
-        case "done":
+        case "headphones":
             wait 10;
             while( isdefined(level.m_headphones) ) wait 0.05;
             break;
@@ -276,11 +276,11 @@ wait_split(split)
             break;
 
         case "time_travel":
-            while( !flag("sq_tpo_special_round_active") && !flag("sq_wisp_saved_with_time_bomb") ) wait 0.05;
+            //while( !flag("sq_tpo_special_round_active") && !flag("sq_wisp_saved_with_time_bomb") ) wait 0.05;
             break;
 
         case "sharpshooter":
-            level waittill("buried_sidequest_achived");
+            level waittill_any("sq_richtofen_complete", "sq_maxis_complete");
             break;
 
         //Origins splits
