@@ -11,7 +11,11 @@ init()
     level.eet_version = "V2.1";
     level.eet_side = "none";
     level.eet_split = 0;
-    level.y_offset = 0;
+
+    level.x_offset = 2;
+    level.y_offset = -34;
+    level.split_y_increment = 16;
+
     level.eet_active_color = (0.82, 0.97, 0.97);
     level.eet_complete_color = (0.01, 0.62, 0.74);
 
@@ -35,7 +39,7 @@ init()
             break;
 
         case "zm_prison":
-            level.y_offset = 50;
+            level.y_offset = 16;
             if(solo)   level.split_list = strtok("dryer|gondola_1|plane_1|gondola_2|plane_2|gondola_3|plane_3|codes|headphones", "|");
             else       level.split_list = strtok("COOP_plane_1|COOP_plane_2|COOP_plane_3|codes|fight", "|");
             break;
@@ -45,7 +49,7 @@ init()
             break;
 
         case "zm_tomb":
-            level.y_offset = 110;
+            level.y_offset = 76;
             if(solo)    level.split_list = strtok("NML|boxes|staff_1|staff_2|staff_3|staff_4|AFD|rain_fire|freedom", "|");
             else        level.split_list = strtok("boxes|AFD|freedom", "|");
             break;
@@ -122,10 +126,10 @@ split(split_name, time)
     split = newhudelem();
     split.alignx = "left";
     split.aligny = "center";
-    split.horzalign = "left";
+    split.horzalign = "user_left"; // user_left respects aspect ratio
     split.vertalign = "top";
-    split.x = -62;
-    split.y = -34 + level.y_offset + level.eet_split * 16;
+    split.x = level.x_offset;
+    split.y = level.y_offset + (level.eet_split * level.split_y_increment);
     split.fontscale = 1.4;
     split.hidewheninmenu = 1;
     split.alpha = 0.8;
@@ -136,7 +140,7 @@ split(split_name, time)
     split settext(game_time_string(time - level.eet_start_time));
 
     level.eet_split++;
-    level.eet_timer.y += 16;
+    level.eet_timer.y += level.split_y_increment;
     level.eet_timer.alpha = 0;
 }
 
@@ -145,10 +149,10 @@ create_timer()
     level.eet_timer = newhudelem();
     level.eet_timer.alignx = "left";
     level.eet_timer.aligny = "center";
-    level.eet_timer.horzalign = "left";
+    level.eet_timer.horzalign = "user_left"; // user_left respects aspect ratio
     level.eet_timer.vertalign = "top";
-    level.eet_timer.x = -62;
-    level.eet_timer.y = -34 + level.y_offset;
+    level.eet_timer.x = level.x_offset;
+    level.eet_timer.y = level.y_offset;
     level.eet_timer.fontscale = 1.4;
     level.eet_timer.hidewheninmenu = 1;
     level.eet_timer.alpha = 0;
