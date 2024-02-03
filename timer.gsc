@@ -122,9 +122,9 @@ split(split_name, time)
     split = newhudelem();
     split.alignx = "left";
     split.aligny = "center";
-    split.horzalign = "left";
+    split.horzalign = "user_left"; // Changed to user_left so it takes into account the actual user's aspect ratio
     split.vertalign = "top";
-    split.x = -62;
+    split.x = 5; // Now 0 is the left side of the screen so we need a positive offset!
     split.y = -34 + level.y_offset + level.eet_split * 16;
     split.fontscale = 1.4;
     split.hidewheninmenu = 1;
@@ -145,9 +145,9 @@ create_timer()
     level.eet_timer = newhudelem();
     level.eet_timer.alignx = "left";
     level.eet_timer.aligny = "center";
-    level.eet_timer.horzalign = "left";
+    level.eet_timer.horzalign = "user_left"; // Changed to user_left so it takes into account the actual user's aspect ratio
     level.eet_timer.vertalign = "top";
-    level.eet_timer.x = -62;
+    level.eet_timer.x = 5; // Now 0 is the left side of the screen so we need a positive offset!
     level.eet_timer.y = -34 + level.y_offset;
     level.eet_timer.fontscale = 1.4;
     level.eet_timer.hidewheninmenu = 1;
