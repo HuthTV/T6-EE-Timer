@@ -81,7 +81,7 @@ on_player_spawned()
     self waittill( "spawned_player" );
     if(upgrades_active()) self thread upgrades_bank();
     wait 2.5;
-    self iprintln("^8[^3EE Timer^8][^5" + level.eet_version + "^8]^7 github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
+    self iprintln("^8[^3EE Timer^8][^5" + level.eet_version + "^8]^7 github.com/HuthTV/T6-EE-Timer");
 }
 
 run_splits()
