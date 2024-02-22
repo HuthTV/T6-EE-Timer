@@ -138,7 +138,7 @@ split(split_name, time)
     split.x = level.x_offset;
     split.y = level.y_offset + (level.eet_split * level.split_y_increment);
     split.fontscale = 1.4;
-    split.hidewheninmenu = 1;
+    split.hidewheninmenu = 0;
     split.alpha = 0.8;
     split.color = level.eet_complete_color;
     if(level.eet_side != "none")
@@ -161,7 +161,7 @@ create_timer()
     level.eet_timer.x = level.x_offset;
     level.eet_timer.y = level.y_offset;
     level.eet_timer.fontscale = 1.4;
-    level.eet_timer.hidewheninmenu = 1;
+    level.eet_timer.hidewheninmenu = 0;
     level.eet_timer.alpha = 0;
     level.eet_timer.color = level.eet_active_color;
     level thread timer_start_thread();
@@ -169,10 +169,38 @@ create_timer()
 
 timer_start_thread()
 {
-    flag_wait("initial_blackscreen_passed");
+    flag_init("timer_start");
+    flag_clear("timer_start");
+    level thread game_start_check();
+
+    flag_wait("timer_start");
     level.eet_start_time = gettime();
     level.eet_timer settenthstimerup(0.05);
     level.eet_timer.alpha = 0.8;
+}
+
+game_start_check()
+{
+    if(level.script == "zm_prison") level thread mob_start_check();
+    flag_wait( "initial_blackscreen_passed" );
+    flag_set("timer_start");
+}
+
+mob_start_check()
+{
+    players = getplayers();
+    while(!flag("timer_start"))
+    {
+        foreach(ghost in players)
+        {
+            if(isdefined(ghost.e_afterlife_corpse))
+            {
+                wait 1.5;
+                flag_set("timer_start");
+            }
+        }
+        wait 0.05;
+    }
 }
 
 chat_restart()
