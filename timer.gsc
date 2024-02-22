@@ -4,11 +4,17 @@
 #include maps\mp\gametypes_zm\_hud_util;
 #include common_scripts\utility;
 
+main()
+{
+	replaceFunc(maps\mp\animscripts\zm_utility::wait_network_frame, ::wait_network_frame_fix);
+	replaceFunc(maps\mp\zombies\_zm_utility::wait_network_frame, ::wait_network_frame_fix);
+}
+
 init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return;
 
-    level.eet_version = "V2.2";
+    level.eet_version = "V2.3";
     level.eet_side = "none";
     level.eet_split = 0;
 
@@ -16,9 +22,10 @@ init()
     level.y_offset = -34;
     level.split_y_increment = 16;
 
-    level.eet_active_color = (0.82, 0.97, 0.97);
-    level.eet_complete_color = (0.01, 0.62, 0.74);
+    level.eet_active_color = (0.99, 0.91, 0.99);
+    level.eet_complete_color = (0.99, 0.58, 0.99);
 
+    level thread network_frame_print();
     level thread on_player_connect();
     level thread chat_restart();
     if(upgrades_active()) level thread upgrade_dvars();
@@ -74,7 +81,7 @@ on_player_spawned()
     self waittill( "spawned_player" );
     if(upgrades_active()) self thread upgrades_bank();
     wait 2.5;
-    self iPrintLn("^6GSC EE Autotimer ^5" + level.eet_version + " ^8| ^3github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
+    self iprintln("^8[^3EE Timer^8][^5" + level.eet_version + "^8]^7 github.com/HuthTV/BO2-Easter-Egg-GSC-timer");
 }
 
 run_splits()
@@ -418,23 +425,69 @@ upgrades_active()
 
 game_time_string(duration)
 {
-    total_sec = int(duration / 1000);
-    total_min = int(total_sec / 60);
-    remaining_ms = (duration % 1000) / 10;
-    remaining_sec = total_sec % 60;
+    if(!isdefined(level.eet_start_time))
+    {
+        return "00:00.00";
+    }
+
+	total_sec = int(duration / 1000);
+	mn = int(total_sec / 60);       //minutes
+	se = int(total_sec % 60);       //seconds
+    ce = (duration % 1000) / 10;    //centiseconds
     time_string = "";
 
-    if(total_min > 9)       { time_string += total_min + ":"; }
-    else                    { time_string += "0" + total_min + ":"; }
-    if(remaining_sec > 9)   { time_string += remaining_sec + "."; }
-    else                    { time_string += "0" + remaining_sec + "."; }
-    if(remaining_ms > 9)    { time_string += remaining_ms; }
-    else                    { time_string += "0" + remaining_ms; }
+    //minutes
+    if(mn > 9)        { time_string = time_string + int(mn); }
+	else              { time_string = time_string + "0" + int(mn); }
+    //seconds
+	if(se > 9)        { time_string = time_string + ":" + se; }
+	else              { time_string = time_string + ":0" + se; }
+    //centiseconds
+    if(ce > 9)        { time_string = time_string + ".0" + int(ce); }
+    else              { time_string = time_string + "." + int(ce); }
 
-    return time_string;
+	return time_string;
 }
 
 create_bool_dvar( dvar, start_val )
 {
     if(getdvar(dvar) == "") setdvar(dvar, start_val);
+}
+
+wait_network_frame_fix()
+{
+    if (level.players.size == 1)
+        wait 0.1;
+    else if (numremoteclients())
+    {
+        snapshot_ids = getsnapshotindexarray();
+
+        for (acked = undefined; !isdefined(acked); acked = snapshotacknowledged(snapshot_ids))
+            level waittill("snapacknowledged");
+    }
+    else
+        wait 0.1;
+}
+
+network_frame_print()
+{
+    flag_wait( "initial_players_connected" );
+    if(!isdefined(level.network_frame_checked))
+    {
+        level.network_frame_checked = true;
+
+        start = gettime();
+        wait_network_frame();
+        delay = gettime() - start;
+
+        msgstring = "^8[^6Network Frame -Fix^8] ^7" + delay + "ms ";
+
+        if( (level.players.size == 1 && delay == 100) || (level.players.size < 1 && delay == 50) )
+            msgstring += "^2good";
+        else
+            msgstring += "^1bad";
+
+        Print(msgstring);
+        IPrintLn(msgstring);
+    }
 }
