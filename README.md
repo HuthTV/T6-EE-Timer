@@ -1,6 +1,6 @@
 Ingame GSC timer for speedrunning ALL BO2 easter eggs. Automatic start, stop, and split functionality. Single GSC script that works seamlessly across every map. Accurate times down to increments of one game tick (50ms).
 
-Latest release (2.3) [[download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V2.3/EE_ingame_timer_2.3.gsc)]
+Latest release (2.4) [[download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V2.4/EE_ingame_timer_2.4.gsc)]
 
 ## Installation
 Place the gsc file in ```C:\Users\%username%\AppData\Local\Plutonium\storage\t6\scripts\zm``` and start playing
