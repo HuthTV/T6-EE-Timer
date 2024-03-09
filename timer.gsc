@@ -14,7 +14,7 @@ init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return;
 
-    level.eet_version = "V2.3";
+    level.eet_version = "V2.4";
     level.eet_side = "none";
     level.eet_split = 0;
 
