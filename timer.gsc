@@ -471,8 +471,8 @@ game_time_string(duration)
 	if(se > 9)        { time_string = time_string + ":" + se; }
 	else              { time_string = time_string + ":0" + se; }
     //centiseconds
-    if(ce > 9)        { time_string = time_string + ".0" + int(ce); }
-    else              { time_string = time_string + "." + int(ce); }
+    if(ce > 9)        { time_string = time_string + "." + int(ce); }
+    else              { time_string = time_string + ".0" + int(ce); }
 
 	return time_string;
 }
@@ -499,18 +499,19 @@ wait_network_frame_fix()
 
 network_frame_print()
 {
-    flag_wait( "initial_players_connected" );
+    flag_wait("initial_blackscreen_passed");
     if(!isdefined(level.network_frame_checked))
     {
         level.network_frame_checked = true;
 
         start = gettime();
         wait_network_frame();
-        delay = gettime() - start;
+        end = gettime();
+        delay = end - start;
 
-        msgstring = "^8[^6Network Frame -Fix^8] ^7" + delay + "ms ";
+        msgstring = "^8[^6Network Frame Fix^8] ^7" + delay + "ms ";
 
-        if( (level.players.size == 1 && delay == 100) || (level.players.size < 1 && delay == 50) )
+        if( (level.players.size == 1 && delay == 100) || (level.players.size > 1 && delay == 50) )
             msgstring += "^2good";
         else
             msgstring += "^1bad";
