@@ -9,7 +9,7 @@ Place the gsc file in ```C:\Users\%username%\AppData\Local\Plutonium\storage\t6\
 Players can initiate a fast restart by typing `r`, `restart`, or `fast_restart` in the game chat. To simplify restarts, players can bind a key to the say command. For instance, `bind F2 say fast_restart`.
 
 ## Network Frame Fix
-In certain older versions of Putonium (such as R2509), there exists an issue with the `wait_network_frame()` function, speeding up certain in-game events, most notably the spawnrate of zombies. This timer incorporates a fix for this particular issue, ensuring that gameplay on older Putonium versions remains legitimate.
+In certain older versions of Plutonium (such as R2905), there exists an issue with the `wait_network_frame()` function, speeding up certain in-game events, most notably the spawnrate of zombies. This timer incorporates a fix for this particular issue, ensuring that gameplay on older Plutonium versions remains legitimate.
 
 
 ## Persistent Upgrades & Bank
