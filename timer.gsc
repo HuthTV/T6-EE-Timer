@@ -14,7 +14,7 @@ init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return;
 
-    level.eet_version = "V2.4";
+    level.eet_version = "V2.5";
     level.eet_side = "none";
     level.eet_split = 0;
 
@@ -41,8 +41,8 @@ init()
             break;
 
         case "zm_highrise":
-            if(solo)   level.split_list = array("highrise_end");
-            else       level.split_list = array("highrise_end");
+            if(solo)   level.split_list = array("highrise_symbols", "highrise_perks");
+            else       level.split_list = array("highrise_symbols", "highrise_perks");
             break;
 
         case "zm_prison":
@@ -266,8 +266,12 @@ wait_split(split)
             break;
 
         //Die Rise splits
-        case "highrise_end":
-            level waittill("highrise_sidequest_achieved");
+        case "highrise_symbols":
+            flag_wait( "sq_atd_drg_puzzle_complete" );
+            break;
+
+        case "highrise_perks":
+            level waittill( "sq_fireball_hit_player" );
             break;
 
         //Mob splits
@@ -375,7 +379,8 @@ set_label(elem, split_name)
         case "jetgun_power_off_richtofen": elem.label = &"^3Jetgun ^7"; break;
 
         //Die Rise
-        case "highrise_end": elem.label = &"^3High Maintenance ^7"; break;
+        case "highrise_symbols": elem.label = &"^3Symbols ^7"; break;
+        case "highrise_perks": elem.label = &"^3High Maintenance ^7"; break;
 
         //Mob of the Dead
         case "dryer": elem.label = &"^3Dryer ^7"; break;
