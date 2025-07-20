@@ -14,7 +14,7 @@ init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return;
 
-    level.eet_version = "V2.5";
+    level.eet_version = "V2.6";
     level.eet_side = "none";
     level.eet_split = 0;
 
@@ -28,6 +28,7 @@ init()
     level thread network_frame_print();
     level thread on_player_connect();
     level thread chat_restart();
+    level thread strafe_dvars();
     if(upgrades_active()) level thread upgrade_dvars();
 
     flag_wait( "initial_players_connected" );
@@ -36,13 +37,11 @@ init()
     switch (level.script)
     {
         case "zm_transit":
-            if(solo)   level.split_list = strtok("jetgun|tower|EMP", "|");
-            else       level.split_list =  array("jetgun_power_off");
+            level.split_list =  array("jetgun_power_off");
             break;
 
         case "zm_highrise":
-            if(solo)   level.split_list = array("highrise_symbols", "highrise_perks");
-            else       level.split_list = array("highrise_symbols", "highrise_perks");
+            level.split_list = array("highrise_symbols", "highrise_perks");
             break;
 
         case "zm_prison":
@@ -131,6 +130,7 @@ split_loop()
 split(split_name, time)
 {
     split = newhudelem();
+    split.sort = 2000;
     split.alignx = "left";
     split.aligny = "center";
     split.horzalign = "user_left"; // user_left respects aspect ratio
@@ -154,6 +154,7 @@ split(split_name, time)
 create_timer()
 {
     level.eet_timer = newhudelem();
+    level.eet_timer.sort = 2000;
     level.eet_timer.alignx = "left";
     level.eet_timer.aligny = "center";
     level.eet_timer.horzalign = "user_left"; // user_left respects aspect ratio
@@ -193,9 +194,9 @@ mob_start_check()
     {
         foreach(ghost in players)
         {
-            if(isdefined(ghost.e_afterlife_corpse))
+            if(isdefined(ghost.afterlife_visionset) && ghost.afterlife_visionset == 1)
             {
-                wait 1.5;
+                wait 0.45;
                 flag_set("timer_start");
             }
         }
@@ -247,10 +248,6 @@ wait_split(split)
 
                 wait 0.05;
             }
-            break;
-
-        case "jetgun":
-            while(level.sq_progress["rich"]["A_jetgun_built"] == 0) wait 0.05;
             break;
 
         case "tower":
@@ -374,7 +371,9 @@ set_label(elem, split_name)
         case "EMP": elem.label = &"^3Lights ^7"; break;
         case "turbines_maxis":
         case "turbines": elem.label = &"^3Turbines ^7"; break;
-        case "jetgun_power_off": elem.label = &"^3Power off/Jetgun ^7"; break;
+        case "jetgun_power_off": 
+            if(level.players.size == 1) { elem.label = &"^3Jetgun ^7"; }
+            else { elem.label = &"^3Power off/Jetgun ^7"; } break;
         case "jetgun_power_off_maxis": elem.label = &"^3Power off ^7"; break;
         case "jetgun_power_off_richtofen": elem.label = &"^3Jetgun ^7"; break;
 
@@ -414,6 +413,22 @@ set_label(elem, split_name)
         case "freedom": elem.label = &"^3Freedom ^7"; break;
 
         case "done": elem.label = &"^3End ^7"; break;
+    }
+}
+
+strafe_dvars()
+{
+    create_bool_dvar("strafe_unlocked", 1);
+
+    if(getdvarint("strafe_unlocked"))
+    {
+        setDvar("player_backSpeedScale", 1);    //Console values
+        setDvar("player_strafeSpeedScale", 1);
+    }
+    else
+    {
+        setDvar("player_backSpeedScale", 0.7);  //Steam values
+        setDvar("player_strafeSpeedScale", 0.8);
     }
 }
 
