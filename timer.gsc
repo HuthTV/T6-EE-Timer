@@ -12,101 +12,81 @@ main()
 
 init()
 {
-    if(level.scr_zm_ui_gametype_group != "zclassic") return;
+    if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
+    level.T6EE_VERSION = "testing";
 
-    level.eet_version = "V2.6";
-    level.eet_side = "none";
-    level.eet_split = 0;
-    level.eet_hud_elems = [];
-
-    level.x_offset = 2;
-    level.split_y_increment = 16;
-    level.string_count = 0;
-
-    level.eet_active_color = (0.99, 0.91, 0.99);
-    level.eet_complete_color = (0.99, 0.58, 0.99);
-
-    populate_split_arrays();
-
-    level thread network_frame_print();
-    level thread on_player_connect();
-    level thread chat_restart();
-    level thread strafe_dvars();
-    level thread overflow_fix();
-
-    if(upgrades_active()) level thread upgrade_dvars();
-
-    flag_wait( "initial_players_connected" );
-    
-    solo = level.players.size == 1;
-
-    level.labels = [];
-    level.split_list = [];
-    populate_split_labels();
-    
-    switch(level.script)
-    {
-        case "zm_prison": level.y_offset = 16; break;
-        case "zm_tomb": level.y_offset = 76; break;
-        default: level.y_offset = -34; break;
-    }
-
+    thread on_player_connect();
+    thread network_frame_print();
+    thread overflow_fix();
+    thread chat_restart();
+    setup_constants();
+    strafe_dvars();
+    if(upgrades_active()) thread upgrade_dvars();
     timer_start_wait();
-    run_splits(); 
+
+    level.T6EE_SPLIT_NUM = 0;
+    for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
+    {
+        level.T6EE_SPLIT[split] = spawnstruct();
+        level.T6EE_SPLIT[split] split_routine();
+    }
 }
 
-populate_split_labels()
+create_split()
 {
-    level.labels["jetgun_power_off"] = "Jetgun/Power off";
-    level.labels["power_off"] = "Power off";
-    level.labels["jetgun"] = "Jetgun";
-    level.labels["turbines"] = "Turbines";
-    level.labels["tower"] = "Tower";
-    level.labels["EMP"] = "Lights";
+    self.split_index = level.T6EE_SPLIT_NUM;
+    self.s_id = level.T6EE_SPLIT_LIST[self.split_index];
+    self.s_label = level.T6EE_LABELS[self.s_id];
+}
 
-    level.labels["highrise_symbols"] = "Symbols";
-    level.labels["highrise_perks"] = "High Maintenance";
+create_split_hud()
+{
+    self.sort = 2000;
+    self.alignx = "left";
+    self.aligny = "center";
+    self.horzalign = "user_left"; // user_left respects aspect ratio
+    self.vertalign = "top";
+    self.x = level.T6EE_X_OFFSET;
+    self.y = level.T6EE_Y_OFFSET + (level.T6EE_SPLIT_NUM * level.T6EE_Y_INCREMENT);
+    self.fontscale = 1.4;
+    self.hidewheninmenu = 0;
+    self.alpha = 0.8;
+    self.color = level.T6EE_ACTIVE_COLOR;
+}
 
-    level.labels["dryer"] = "Dryer";
-    level.labels["gondola_1"] = "Gondola I";
-    level.labels["gondola_2"] = "Gondola II";
-    level.labels["gondola_3"] = "Gondola III";
-    level.labels["plane_1"] = "Plane I";
-    level.labels["plane_2"] = "Plane II";
-    level.labels["plane_3"] = "Plane III";
-    level.labels["codes"] = "Codes";
-    level.labels["headphones"] = "Headphones";
-    level.labels["fight"] = "Showdown";
 
-    level.labels["cipher"] = "Cipher";
-    level.labels["sharpshooter"] = "Sharpshooter";
+split_routine()
+{
+        self create_split();
 
-    level.labels["NML"] = "NML";
-    level.labels["boxes"] = "Boxes";
-    level.labels["staff_1"] = "Staff I";
-    level.labels["staff_2"] = "Staff II";
-    level.labels["staff_3"] = "Staff III";
-    level.labels["staff_4"] = "Staff IV";
-    level.labels["AFD"] = "AFD";
-    level.labels["rain_fire"] = "Rain Fire";
-    level.labels["freedom"] = "Freedom";
+        //HUD enabeled
+        self.hud = newhudelem();
+        self.hud create_split_hud();
+        self thread update_split_timer();
+        //HUD enabeled
 
-    splits["zm_transit"] = array("jetgun_power_off");
-    splits["zm_highrise"] = strtok("highrise_symbols|highrise_perks", "|");
-    splits["zm_buried"] = strtok("cipher|sharpshooter", "|");
+        wait_split(self.s_id);
+        self.completion_time = (gettime() - level.T6EE_START_TIME);
+        level.T6EE_SPLIT_NUM++;
 
-    if(solo)
+        if(self.s_id == "jetgun_power_off")
+        {
+            tranzit_branch();
+        }
+
+        //HUD enabeled
+        self.hud.color = level.T6EE_COMPLETE_COLOR;
+        self.hud set_safe_text("^3" + self.s_label + " ^7" + game_time_string(self.completion_time));  
+        //HUD enabeled     
+}
+
+update_split_timer()
+{
+    while(self.split_index == level.T6EE_SPLIT_NUM)
     {
-        splits["zm_prison"] = strtok("dryer|gondola_1|plane_1|gondola_2|plane_2|gondola_3|plane_3|codes|headphones", "|");
-        splits["zm_tomb"] = strtok("NML|boxes|staff_1|staff_2|staff_3|staff_4|AFD|rain_fire|freedom", "|");
+        self.hud set_safe_text("^3" + self.s_label + " ^7" + game_time_string(gettime() - level.T6EE_START_TIME));
+        wait 0.05;
     }
-    else
-    {
-        splits["zm_prison"] = strtok("COOP_plane_1|COOP_plane_2|COOP_plane_3|codes|fight", "|");
-        splits["zm_tomb"] = strtok("boxes|AFD|freedom", "|");
-    }
-
-    level.split_list = splits[level.script];
 }
 
 on_player_connect()
@@ -124,104 +104,33 @@ on_player_spawned()
     self waittill( "spawned_player" );
     if(upgrades_active()) self thread upgrades_bank();
     wait 2.5;
-    self iprintln("^8[^3EE Timer^8][^5" + level.eet_version + "^8]^7 github.com/HuthTV/T6-EE-Timer");
+    self iprintln("^8[^3EE Timer^8][^5" + level.T6EE_VERSION + "^8]^7 github.com/HuthTV/T6-EE-Timer");
+    self.score = 30000; //prevents level up sound
 }
 
-run_splits()
+tranzit_branch()
 {
-
-    split_loop();
-
-    if(level.eet_side == "richtofen")
+    side = level.T6EE_SIDE;
+    if(side == "richtofen")
     {
-        switch(level.script)
-        {
-            case "zm_transit": richtofen_splits = array("tower", "EMP"); break;
-        }
-
-        foreach(split in richtofen_splits)
-            level.split_list[level.split_list.size] = split;
-
-        split_loop();
+        self.s_label = "Jetgun";
+        level.T6EE_SPLIT_LIST = combinearrays(level.T6EE_SPLIT_LIST, array("tower", "EMP"));
     }
-    else if(level.eet_side == "maxis")
+    else if(side == "maxis")
     {
-        switch(level.script)
-        {
-            case "zm_transit":  maxis_splits = array("turbines"); break;
-        }
-
-        foreach(split in maxis_splits)
-            level.split_list[level.split_list.size] = split;
-
-        split_loop();
+        self.s_label = "Power off";
+        level.T6EE_SPLIT_LIST = combinearrays(level.T6EE_SPLIT_LIST, array("turbines"));
     }
 }
 
-split_loop()
-{
-    level endon( "game_ended" );
-
-    for(i = level.eet_split; i < level.split_list.size; i++)
-    {
-        set_label(level.eet_timer, level.split_list[i]);
-        level.eet_timer.alpha = 0.8 * (level.eet_split != 0);
-        split = level.split_list[i];
-        split(split, wait_split(split));
-    }
-}
-
-split(split_name, time)
-{
-    split = newhudelem();
-    split.sort = 2000;
-    split.alignx = "left";
-    split.aligny = "center";
-    split.horzalign = "user_left"; // user_left respects aspect ratio
-    split.vertalign = "top";
-    split.x = level.x_offset;
-    split.y = level.y_offset + (level.eet_split * level.split_y_increment);
-    split.fontscale = 1.4;
-    split.hidewheninmenu = 0;
-    split.alpha = 0.8;
-    split.color = level.eet_complete_color;
-    if(level.eet_side != "none")
-        split_name = split_name + "_" + level.eet_side;
-    set_label(split, split_name);
-    split settext(game_time_string(time - level.eet_start_time));
-
-    level.eet_split++;
-    level.eet_timer.y += level.split_y_increment;
-    level.eet_timer.alpha = 0;
-}
-
-create_timer()
-{
-    level.eet_timer = newhudelem();
-    level.eet_timer.sort = 2000;
-    level.eet_timer.alignx = "left";
-    level.eet_timer.aligny = "center";
-    level.eet_timer.horzalign = "user_left"; // user_left respects aspect ratio
-    level.eet_timer.vertalign = "top";
-    level.eet_timer.x = level.x_offset;
-    level.eet_timer.y = level.y_offset;
-    level.eet_timer.fontscale = 1.4;
-    level.eet_timer.hidewheninmenu = 0;
-    level.eet_timer.alpha = 0;
-    level.eet_timer.color = level.eet_active_color;
-    level thread timer_start_thread();
-}
-
-timer_start_thread()
+timer_start_wait()
 {
     flag_init("timer_start");
     flag_clear("timer_start");
     level thread game_start_check();
 
     flag_wait("timer_start");
-    level.eet_start_time = gettime();
-    level.eet_timer settenthstimerup(0.05);
-    level.eet_timer.alpha = 0.8;
+    level.T6EE_START_TIME = gettime();
 }
 
 game_start_check()
@@ -279,14 +188,14 @@ wait_split(split)
                 if( level.sq_progress["rich"]["A_jetgun_built"] > 0 )
                 {
                     split = true;
-                    level.eet_side = "richtofen";
+                    level.T6EE_SIDE = "richtofen";
                     continue;
                 }
 
                 if( level.power_event_in_progress )
                 {
                     split = true;
-                    level.eet_side = "maxis";
+                    level.T6EE_SIDE = "maxis";
                     continue;
                 }
 
@@ -460,7 +369,7 @@ upgrades_active()
 
 game_time_string(duration)
 {
-    if(!isdefined(level.eet_start_time))
+    if(!isdefined(level.T6EE_START_TIME))
     {
         return "00:00.00";
     }
@@ -504,6 +413,70 @@ wait_network_frame_fix()
         wait 0.1;
 }
 
+setup_constants()
+{
+    flag_wait( "initial_players_connected" );
+    level.T6EE_ACTIVE_COLOR = (0.99, 0.91, 0.99);
+    level.T6EE_COMPLETE_COLOR = (0.99, 0.58, 0.99);
+    level.T6EE_X_OFFSET = 2;
+    level.T6EE_Y_OFFSET = -34;
+    level.T6EE_Y_INCREMENT = 16;
+    switch(level.script)
+    {
+        case "zm_prison": level.T6EE_Y_OFFSET = 16; break;
+        case "zm_tomb": level.T6EE_Y_OFFSET = 76; break;
+    }
+
+    level.T6EE_LABELS["jetgun_power_off"] = "Jetgun/Power off";
+    level.T6EE_LABELS["turbines"] = "Turbines";
+    level.T6EE_LABELS["tower"] = "Tower";
+    level.T6EE_LABELS["EMP"] = "Lights";
+
+    level.T6EE_LABELS["highrise_symbols"] = "Symbols";
+    level.T6EE_LABELS["highrise_perks"] = "High Maintenance";
+
+    level.T6EE_LABELS["dryer"] = "Dryer";
+    level.T6EE_LABELS["gondola_1"] = "Gondola I";
+    level.T6EE_LABELS["gondola_2"] = "Gondola II";
+    level.T6EE_LABELS["gondola_3"] = "Gondola III";
+    level.T6EE_LABELS["plane_1"] = "Plane I";
+    level.T6EE_LABELS["plane_2"] = "Plane II";
+    level.T6EE_LABELS["plane_3"] = "Plane III";
+    level.T6EE_LABELS["codes"] = "Codes";
+    level.T6EE_LABELS["headphones"] = "Headphones";
+    level.T6EE_LABELS["fight"] = "Showdown";
+
+    level.T6EE_LABELS["cipher"] = "Cipher";
+    level.T6EE_LABELS["sharpshooter"] = "Sharpshooter";
+
+    level.T6EE_LABELS["NML"] = "NML";
+    level.T6EE_LABELS["boxes"] = "Boxes";
+    level.T6EE_LABELS["staff_1"] = "Staff I";
+    level.T6EE_LABELS["staff_2"] = "Staff II";
+    level.T6EE_LABELS["staff_3"] = "Staff III";
+    level.T6EE_LABELS["staff_4"] = "Staff IV";
+    level.T6EE_LABELS["AFD"] = "AFD";
+    level.T6EE_LABELS["rain_fire"] = "Rain Fire";
+    level.T6EE_LABELS["freedom"] = "Freedom";
+
+    splits["zm_transit"] = array("jetgun_power_off");
+    splits["zm_highrise"] = strtok("highrise_symbols|highrise_perks", "|");
+    splits["zm_buried"] = strtok("cipher|sharpshooter", "|");
+
+    if(level.players.size == 1)
+    {
+        splits["zm_prison"] = strtok("dryer|gondola_1|plane_1|gondola_2|plane_2|gondola_3|plane_3|codes|headphones", "|");
+        splits["zm_tomb"] = strtok("NML|boxes|staff_1|staff_2|staff_3|staff_4|AFD|rain_fire|freedom", "|");
+    }
+    else
+    {
+        splits["zm_prison"] = strtok("plane_1|plane_2|plane_3|codes|fight", "|");
+        splits["zm_tomb"] = strtok("boxes|AFD|freedom", "|");
+    }
+
+    level.T6EE_SPLIT_LIST = splits[level.script];
+}
+
 network_frame_print()
 {
     flag_wait("initial_blackscreen_passed");
@@ -541,9 +514,9 @@ overflow_fix()
     level endon("game_ended");
 	level endon("host_migration_begin");
 
-    level.dummy_string = createServerFontString("default", 1);
-	level.dummy_string setText("overflow");
-	level.dummy_string.alpha = 0;
+    level.overflow_string = createServerFontString("default", 1);
+	level.overflow_string setText("overflow");
+	level.overflow_string.alpha = 0;
 
     level.string_count = 0;
     max_string_count = 55;
@@ -554,11 +527,12 @@ overflow_fix()
 
             if(level.string_count >= max_string_count)
             {
-                level.dummy_string ClearAllTextAfterHudElem();
+                level.overflow_string ClearAllTextAfterHudElem();
                 level.string_count = 0;
-                foreach(elem in level.eet_hud_elems)
+                foreach(elem in level.T6EE_SPLIT)
                 {
-                    elem set_safe_text(elem.text_string);
+                    if(isdefined(elem.hud))
+                    elem.hud set_safe_text(elem.hud.text_string);
                 }
             }
     }
