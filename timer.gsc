@@ -17,52 +17,96 @@ init()
     level.eet_version = "V2.6";
     level.eet_side = "none";
     level.eet_split = 0;
+    level.eet_hud_elems = [];
 
     level.x_offset = 2;
-    level.y_offset = -34;
     level.split_y_increment = 16;
+    level.string_count = 0;
 
     level.eet_active_color = (0.99, 0.91, 0.99);
     level.eet_complete_color = (0.99, 0.58, 0.99);
+
+    populate_split_arrays();
 
     level thread network_frame_print();
     level thread on_player_connect();
     level thread chat_restart();
     level thread strafe_dvars();
+    level thread overflow_fix();
+
     if(upgrades_active()) level thread upgrade_dvars();
 
     flag_wait( "initial_players_connected" );
+    
     solo = level.players.size == 1;
 
-    switch (level.script)
+    level.labels = [];
+    level.split_list = [];
+    populate_split_labels();
+    
+    switch(level.script)
     {
-        case "zm_transit":
-            level.split_list =  array("jetgun_power_off");
-            break;
-
-        case "zm_highrise":
-            level.split_list = array("highrise_symbols", "highrise_perks");
-            break;
-
-        case "zm_prison":
-            level.y_offset = 16;
-            if(solo)   level.split_list = strtok("dryer|gondola_1|plane_1|gondola_2|plane_2|gondola_3|plane_3|codes|headphones", "|");
-            else       level.split_list = strtok("COOP_plane_1|COOP_plane_2|COOP_plane_3|codes|fight", "|");
-            break;
-
-        case "zm_buried":
-            level.split_list = strtok("cipher|sharpshooter", "|");
-            break;
-
-        case "zm_tomb":
-            level.y_offset = 76;
-            if(solo)    level.split_list = strtok("NML|boxes|staff_1|staff_2|staff_3|staff_4|AFD|rain_fire|freedom", "|");
-            else        level.split_list = strtok("boxes|AFD|freedom", "|");
-            break;
+        case "zm_prison": level.y_offset = 16; break;
+        case "zm_tomb": level.y_offset = 76; break;
+        default: level.y_offset = -34; break;
     }
 
-    create_timer();
-    run_splits();
+    timer_start_wait();
+    run_splits(); 
+}
+
+populate_split_labels()
+{
+    level.labels["jetgun_power_off"] = "Jetgun/Power off";
+    level.labels["power_off"] = "Power off";
+    level.labels["jetgun"] = "Jetgun";
+    level.labels["turbines"] = "Turbines";
+    level.labels["tower"] = "Tower";
+    level.labels["EMP"] = "Lights";
+
+    level.labels["highrise_symbols"] = "Symbols";
+    level.labels["highrise_perks"] = "High Maintenance";
+
+    level.labels["dryer"] = "Dryer";
+    level.labels["gondola_1"] = "Gondola I";
+    level.labels["gondola_2"] = "Gondola II";
+    level.labels["gondola_3"] = "Gondola III";
+    level.labels["plane_1"] = "Plane I";
+    level.labels["plane_2"] = "Plane II";
+    level.labels["plane_3"] = "Plane III";
+    level.labels["codes"] = "Codes";
+    level.labels["headphones"] = "Headphones";
+    level.labels["fight"] = "Showdown";
+
+    level.labels["cipher"] = "Cipher";
+    level.labels["sharpshooter"] = "Sharpshooter";
+
+    level.labels["NML"] = "NML";
+    level.labels["boxes"] = "Boxes";
+    level.labels["staff_1"] = "Staff I";
+    level.labels["staff_2"] = "Staff II";
+    level.labels["staff_3"] = "Staff III";
+    level.labels["staff_4"] = "Staff IV";
+    level.labels["AFD"] = "AFD";
+    level.labels["rain_fire"] = "Rain Fire";
+    level.labels["freedom"] = "Freedom";
+
+    splits["zm_transit"] = array("jetgun_power_off");
+    splits["zm_highrise"] = strtok("highrise_symbols|highrise_perks", "|");
+    splits["zm_buried"] = strtok("cipher|sharpshooter", "|");
+
+    if(solo)
+    {
+        splits["zm_prison"] = strtok("dryer|gondola_1|plane_1|gondola_2|plane_2|gondola_3|plane_3|codes|headphones", "|");
+        splits["zm_tomb"] = strtok("NML|boxes|staff_1|staff_2|staff_3|staff_4|AFD|rain_fire|freedom", "|");
+    }
+    else
+    {
+        splits["zm_prison"] = strtok("COOP_plane_1|COOP_plane_2|COOP_plane_3|codes|fight", "|");
+        splits["zm_tomb"] = strtok("boxes|AFD|freedom", "|");
+    }
+
+    level.split_list = splits[level.script];
 }
 
 on_player_connect()
@@ -357,63 +401,6 @@ wait_split(split)
     }
 
     return gettime();
-}
-
-set_label(elem, split_name)
-{
-    switch (split_name)
-    {
-        //Tranzit
-        case "jetgun": elem.label = &"^3Jetgun ^7"; break;
-        case "tower_richtofen":
-        case "tower": elem.label = &"^3Tower ^7"; break;
-        case "EMP_richtofen":
-        case "EMP": elem.label = &"^3Lights ^7"; break;
-        case "turbines_maxis":
-        case "turbines": elem.label = &"^3Turbines ^7"; break;
-        case "jetgun_power_off": 
-            if(level.players.size == 1) { elem.label = &"^3Jetgun ^7"; }
-            else { elem.label = &"^3Power off/Jetgun ^7"; } break;
-        case "jetgun_power_off_maxis": elem.label = &"^3Power off ^7"; break;
-        case "jetgun_power_off_richtofen": elem.label = &"^3Jetgun ^7"; break;
-
-        //Die Rise
-        case "highrise_symbols": elem.label = &"^3Symbols ^7"; break;
-        case "highrise_perks": elem.label = &"^3High Maintenance ^7"; break;
-
-        //Mob of the Dead
-        case "dryer": elem.label = &"^3Dryer ^7"; break;
-        case "gondola_1": elem.label = &"^3Gondola I ^7"; break;
-        case "gondola_2": elem.label = &"^3Gondola II ^7"; break;
-        case "gondola_3": elem.label = &"^3Gondola III ^7"; break;
-        case "COOP_plane_1":
-        case "plane_1": elem.label = &"^3Plane I ^7"; break;
-        case "COOP_plane_2":
-        case "plane_2": elem.label = &"^3Plane II ^7"; break;
-        case "COOP_plane_3":
-        case "plane_3": elem.label = &"^3Plane III ^7"; break;
-        case "codes": elem.label = &"^3Codes ^7"; break;
-        case "headphones": elem.label = &"^3Headphones ^7"; break;
-        case "fight": elem.label = &"^3Fight ^7"; break;
-
-        //Buried
-        case "cipher": elem.label = &"^3Cipher ^7"; break;
-        case "time_travel": elem.label = &"^3Time travel ^7"; break;
-        case "sharpshooter": elem.label = &"^3Sharpshooter ^7"; break;
-
-        //Origins
-        case "NML": elem.label = &"^3NML ^7"; break;
-        case "boxes": elem.label = &"^3Boxes ^7"; break;
-        case "staff_1": elem.label = &"^3Staff I ^7"; break;
-        case "staff_2": elem.label = &"^3Staff II ^7"; break;
-        case "staff_3": elem.label = &"^3Staff III ^7"; break;
-        case "staff_4": elem.label = &"^3Staff IV ^7"; break;
-        case "AFD": elem.label = &"^3AFD ^7"; break;
-        case "rain_fire": elem.label = &"^3Rain Fire ^7"; break;
-        case "freedom": elem.label = &"^3Freedom ^7"; break;
-
-        case "done": elem.label = &"^3End ^7"; break;
-    }
 }
 
 strafe_dvars()
