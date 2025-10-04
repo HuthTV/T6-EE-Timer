@@ -540,3 +540,39 @@ network_frame_print()
         IPrintLn(msgstring);
     }
 }
+
+set_safe_text(text)
+{
+	level.string_count += 1;
+	level notify("textset");
+    self.text_string = text;
+	self setText(text);
+}
+
+overflow_fix()
+{
+    level endon("game_ended");
+	level endon("host_migration_begin");
+
+    level.dummy_string = createServerFontString("default", 1);
+	level.dummy_string setText("overflow");
+	level.dummy_string.alpha = 0;
+
+    level.string_count = 0;
+    max_string_count = 55;
+
+    while(true)
+    {
+            level waittill("textset");
+
+            if(level.string_count >= max_string_count)
+            {
+                level.dummy_string ClearAllTextAfterHudElem();
+                level.string_count = 0;
+                foreach(elem in level.eet_hud_elems)
+                {
+                    elem set_safe_text(elem.text_string);
+                }
+            }
+    }
+}
