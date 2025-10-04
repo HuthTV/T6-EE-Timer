@@ -230,22 +230,16 @@ wait_split(split)
             break;
 
         case "gondola_1":
-            flag_wait("fueltanks_found");
-            flag_wait("gondola_in_motion");
-            break;
-
         case "gondola_2":
         case "gondola_3":
+            flag_wait("gondola_initialized");
             flag_wait("gondola_in_motion");
             break;
 
-        case "COOP_plane_2":
-        case "COOP_plane_3":
-            flag_wait("spawn_fuel_tanks");
-        case "COOP_plane_1":
         case "plane_1":
         case "plane_2":
         case "plane_3":
+            flag_waitopen("plane_boarded");
             flag_wait("plane_boarded");
             break;
 
@@ -333,13 +327,13 @@ upgrade_dvars()
     foreach(upgrade in level.pers_upgrades)
     {
         foreach(stat_name in upgrade.stat_names)
-            level.eet_upgrades[level.eet_upgrades.size] = stat_name;
+            level.T6EE_upgrades[level.T6EE_upgrades.size] = stat_name;
     }
 
     create_bool_dvar("full_bank", 1);
     create_bool_dvar("pers_insta_kill", level.script != "zm_transit");
 
-    foreach(pers_perk in level.eet_upgrades)
+    foreach(pers_perk in  level.T6EE_upgrades)
         create_bool_dvar(pers_perk, 1);
 }
 
