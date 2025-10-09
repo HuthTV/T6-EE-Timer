@@ -6,8 +6,10 @@
 
 main()
 {
-	replaceFunc(maps\mp\animscripts\zm_utility::wait_network_frame, ::wait_network_frame_fix);
-	replaceFunc(maps\mp\zombies\_zm_utility::wait_network_frame, ::wait_network_frame_fix);
+    setdvar("scr_allowFileIo", 1);
+    file = fs_fopen("timer", "write");
+    fs_write( file, "0|0" );
+    fs_fclose( file );
 }
 
 init()
@@ -123,36 +125,25 @@ tranzit_branch()
     }
 }
 
-timer_start_wait()
+game_over_wait()
 {
-    flag_init("timer_start");
-    flag_clear("timer_start");
-    level thread game_start_check();
+    flag_init("game_over");
+    level waittill( "end_game" );
+    wait 1;
+    flag_set("game_over");
+}
 
+gametime_monitor()
+{
     flag_wait("timer_start");
-    level.T6EE_START_TIME = gettime();
-}
-
-game_start_check()
-{
-    if(level.script == "zm_prison") level thread mob_start_check();
-    flag_wait( "initial_blackscreen_passed" );
-    flag_set("timer_start");
-}
-
-mob_start_check()
-{
-    players = getplayers();
-    while(!flag("timer_start"))
+    start_time = getTime();
+    while(!flag("game_over"))
     {
-        foreach(ghost in players)
-        {
-            if(isdefined(ghost.afterlife_visionset) && ghost.afterlife_visionset == 1)
-            {
-                wait 0.45;
-                flag_set("timer_start");
-            }
-        }
+        if(level.T6EE_SPLIT_NUM == level.T6EE_SPLIT_LIST.size) flag_set("game_over");
+        timer_file = fs_fopen("timer", "write");
+        str = level.T6EE_SPLIT_NUM + "|" + (getTime() - start_time);
+        fs_write( timer_file, str );
+        fs_fclose( timer_file );
         wait 0.05;
     }
 }
@@ -392,21 +383,6 @@ create_bool_dvar( dvar, start_val )
     if(getdvar(dvar) == "") setdvar(dvar, start_val);
 }
 
-wait_network_frame_fix()
-{
-    if (level.players.size == 1)
-        wait 0.1;
-    else if (numremoteclients())
-    {
-        snapshot_ids = getsnapshotindexarray();
-
-        for (acked = undefined; !isdefined(acked); acked = snapshotacknowledged(snapshot_ids))
-            level waittill("snapacknowledged");
-    }
-    else
-        wait 0.1;
-}
-
 setup_constants()
 {
     flag_wait( "initial_players_connected" );
@@ -474,25 +450,13 @@ setup_constants()
 network_frame_print()
 {
     flag_wait("initial_blackscreen_passed");
-    if(!isdefined(level.network_frame_checked))
-    {
-        level.network_frame_checked = true;
 
-        start = gettime();
-        wait_network_frame();
-        end = gettime();
-        delay = end - start;
+    start = gettime();
+    wait_network_frame();
+    delay = gettime() - start;
 
-        msgstring = "^8[^6Network Frame Fix^8] ^7" + delay + "ms ";
-
-        if( (level.players.size == 1 && delay == 100) || (level.players.size > 1 && delay == 50) )
-            msgstring += "^2good";
-        else
-            msgstring += "^1bad";
-
-        Print(msgstring);
-        IPrintLn(msgstring);
-    }
+    wrong_delay = (level.players.size == 1 && delay != 100) || (level.players.size > 1 && delay != 50);
+    if(!correct_frame) println("^1BAD NETWORK FRAME^8[ ^7" + delay + "ms ^8]");
 }
 
 set_safe_text(text)
