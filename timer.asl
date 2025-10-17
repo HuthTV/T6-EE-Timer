@@ -1,7 +1,6 @@
 state("plutonium-bootstrapper-win32")
 {
-	int tick:     0x002AA13C, 0x14;
-    string map_name:  0x002AA13C, 0x24, 256;
+    string11 map_name:  0x00EC3D5C; //zm_mapname
 }
 
 startup
@@ -12,26 +11,36 @@ startup
     
     vars.map_splits = new Dictionary<string, string[]>
     {
-        { "Tranzit", new[] { "Jetgun/Power Off", "Tower/Turbines", "Emp" } },
-        { "Die Rise", new[] { "Symbols", "Sniper", "High Maintenance" } },
-        { "Mob of the Dead", new[] { "Dryer", "Gondola 1", "Flight 1", "Gondola 2", "Flight 2", "Gondola 3", "Flight 3", "Codes", "Headphones" } },
-        { "Buried", new[] { "Cipher", "Time Travel", "Sharpshooter" } },
-        { "Origins", new[] { "No Man's Land", "Chests Filled", "Staff 1", "Staff 2", "Staff 3", "Staff 4", "Ascend from Darkness", "Rain Fire", "Freedom" } }
+        { "zm_transit", new[] { "Jetgun/Power Off", "Tower/Turbines", "Emp" } },
+        { "zm_highrise", new[] { "Symbols", "Sniper", "High Maintenance" } },
+        { "zm_prison", new[] { "Dryer", "Gondola 1", "Flight 1", "Gondola 2", "Flight 2", "Gondola 3", "Flight 3", "Codes", "Headphones" } },
+        { "zm_buried", new[] { "Cipher", "Time Travel", "Sharpshooter" } },
+        { "zm_tomb", new[] { "No Man's Land", "Chests Filled", "Staff 1", "Staff 2", "Staff 3", "Staff 4", "Ascend from Darkness", "Rain Fire", "Freedom" } }
     };
+
+	vars.map_uiNames = new Dictionary<string, string>
+	{
+		{ "zm_transit", "Tranzit" },
+		{ "zm_highrise", "Die Rise" },
+		{ "zm_prison", "Mob of the Dead" },
+		{ "zm_buried", "Buried" },
+		{ "zm_tomb", "Origins" }
+	};
 
     
     foreach (var map in vars.map_splits)
     {
-        settings.Add(map.Key); // top-level parent, collapsed
+        string uiName = vars.map_uiNames[map.Key];
+        settings.Add(uiName); // top-level map
 
         foreach (var split in map.Value)
         {
-            settings.Add(split, true, split, map.Key); // child setting under map
+            settings.Add(split, true, split, uiName); // map split
         }
     }
 
 	vars.timerString = "0|0";
-	vars.filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Plutonium", "storage", "t6", "raw", "scriptdata", "timer");
+	vars.filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Plutonium", "storage", "t6", "raw", "scriptdata", "T6EE.dat");
 }
 
 update
@@ -60,8 +69,9 @@ isLoading
 
 start
 {
-	if(vars.timeValue == 50)
+	if(vars.timeValue == 50) //start after game writes 1st tick in T6EE.dat
 	{
+		vars.splits = vars.map_splits[current.map_name.Trim()];
 		vars.split = 0;
 		return true;
 	}
@@ -71,8 +81,7 @@ split
 {
 	if(vars.splitValue > vars.split)
 	{
-        vars.split++;
-		if(settings[vars.map_splits[vars.currentMap][vars.split]])
+		if(settings[vars.splits[vars.split++]])
             return true;
 	}
 }
