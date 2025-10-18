@@ -70,7 +70,8 @@ on_player_connect()
     { 
         level waittill( "connected", player );
         player thread on_player_spawned();
-        Player thread speedometer();
+        if(int(level.T6EE_CFG["hud_speed"]) == 1)
+            player thread speedometer();
     }
 }
 
@@ -141,6 +142,7 @@ apply_strafe_settings()
 
 handle_chat_commands()
 {
+    flag_wait( "initial_blackscreen_passed" );
     while(true)
     {
         level waittill("say", message, player);
@@ -149,7 +151,7 @@ handle_chat_commands()
         switch (msg)
         {
             case "timer":
-                status = level.T6EE_HUD_ENABLED;
+                status = int(level.T6EE_HUD_ENABLED);
                 level.T6EE_CFG["hud_timer"] = !status;
                 player iprintln("HUD Timer " + (status ? "disabled" : "enabled") + " - restart map");
                 write_config();
@@ -164,7 +166,8 @@ handle_chat_commands()
                 break;
 
             case "speed":
-                level.T6EE_CFG["hud_speed"] = !level.T6EE_CFG["hud_speed"];
+                status = int(level.T6EE_CFG["hud_speed"]);
+                level.T6EE_CFG["hud_speed"] = !status;
                 if(isdefined(player.speedometer))
                 {
                     player notify( "kill_speedometer" );
@@ -524,7 +527,7 @@ init_default_config()
     level.T6EE_CFG = [];
     level.T6EE_CFG["hud_timer"] = 1;
     level.T6EE_CFG["hud_speed"] = 1;
-    level.T6EE_CFG["console_strafe"] = 1;
+    level.T6EE_CFG["console_strafe"] = 0;
 }
 
 read_config()
@@ -535,6 +538,7 @@ read_config()
     foreach(setting in tokens)
     {
         split = strtok(setting, "=");
+        println("Loaded setting: " + split[0] + " = " + split[1]);
         level.T6EE_CFG[split[0]] = split[1];
     }
     fs_fclose(config_handle);
@@ -720,6 +724,8 @@ precache_hud_strings(map)
             precachestring( &"ZM_TOMB_DIHO");
             break;
     }
+
+    precachestring( &"ZOMBIE_CLAYMORE_HOWTO");
     precachestring( &"ZOMBIE_PLAYERZOMBIE_DOWNED");
     precachestring( &"ZOMBIE_REVIVING_SOLO");
     precachestring( &"ZOMBIE_SUICIDING");
@@ -733,18 +739,22 @@ precache_hud_strings(map)
     {
         foreach(p in runners)  //afterlife/maxis
         {
-            tmp_strings[p.name + "gm_rev"] = newhudelem();
-            tmp_strings[p.name + "gm_rev"] settext( &"GAME_PLAYER_IS_REVIVING_YOU", p);
-            tmp_strings[p.name + "gm_rev"].alpha = 0;
+            tmp_strings[p.name + "gm_is_rev"] = newhudelem();
+            tmp_strings[p.name + "gm_is_rev"] settext( &"GAME_PLAYER_IS_REVIVING_YOU", p);
+            tmp_strings[p.name + "gm_is_rev"].alpha = 0;
         }
     }
 
     foreach(p in runners) //normal revive
     {
-        tmp_strings[p.name + "zm_rev"] = newhudelem();
-        tmp_strings[p.name + "zm_rev"] settext( &"ZOMBIE_PLAYER_IS_REVIVING_YOU", p);
-        tmp_strings[p.name + "zm_rev"].alpha = 0;
-    }
+        tmp_strings[p.name + "zm_is_rev"] = newhudelem();
+        tmp_strings[p.name + "zm_is_rev"] settext( &"ZOMBIE_PLAYER_IS_REVIVING_YOU", p);
+        tmp_strings[p.name + "zm_is_rev"].alpha = 0;
+
+        tmp_strings[p.name + "zm_need_rev"] = newhudelem();
+        tmp_strings[p.name + "zm_need_rev"] settext( &"ZOMBIE_PLAYER_NEEDS_TO_BE_REVIVED", p);
+        tmp_strings[p.name + "zm_need_rev"].alpha = 0;
+    }   
 }
 
 game_time_string(duration)
