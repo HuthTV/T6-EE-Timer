@@ -476,11 +476,11 @@ upgrade_dvars()
             level.T6EE_upgrades[level.T6EE_upgrades.size] = stat_name;
     }
 
-    create_bool_dvar("full_bank", 1);
-    create_bool_dvar("pers_insta_kill", level.script != "zm_transit");
+    set_dvar_if_unset("full_bank", 1);
+    set_dvar_if_unset("pers_insta_kill", level.script != "zm_transit");
 
     foreach(pers_perk in  level.T6EE_upgrades)
-        create_bool_dvar(pers_perk, 1);
+        set_dvar_if_unset(pers_perk, 1);
 }
 
 upgrades_bank()
@@ -790,9 +790,4 @@ game_time_string(duration)
     else              { time_string = time_string + ".0" + int(ce); }
 
 	return time_string;
-}
-
-create_bool_dvar( dvar, start_val )
-{
-    if(getdvar(dvar) == "") setdvar(dvar, start_val);
 }
