@@ -28,7 +28,7 @@ main()
 init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
-    level.T6EE_VERSION = "unified timer testing";
+    level.T6EE_VERSION = "timer version";
     level.T6EE_HUD_ENABLED = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
     level.T6EE_SPLIT = [];
@@ -95,17 +95,26 @@ speedometer()
     while (true)
     {
         vel = int(length(self getvelocity() * (1, 1, 0))); //ignore vertical velocity
-        self.speedometer set_velocity_color(vel);
+        self.speedometer set_velocity_color(vel, self hasperk("specialty_longersprint"));
         self.speedometer setValue(vel);
         wait 0.05;
     }
 }
 
-set_velocity_color(vel)
+set_velocity_color(vel, stamina_up)
 {
     //Speed range for color gradient
-    min_speed = 250.0;
-    max_speed = 350.0;
+
+    if(stamina_up)
+    {
+        min_speed = 310.0;
+        max_speed = 390.0;
+    }
+    else
+    {
+        min_speed = 260.0;
+        max_speed = 350.0;
+    }
 
     //clamp value 0-1
     ratio = (vel - min_speed) / (max_speed - min_speed);
@@ -460,7 +469,7 @@ set_strafe_speed( use_console )
 
 upgrade_dvars()
 {
-    if(upgrades_active()) return;
+    if(!upgrades_active()) return;
     foreach(upgrade in level.pers_upgrades)
     {
         foreach(stat_name in upgrade.stat_names)
