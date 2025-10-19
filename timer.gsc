@@ -41,6 +41,8 @@ init()
     level.T6EE_Y_MAP_OFFSET["zm_prison"] = 16;
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
+    flag_init("timer_end");
+    flag_init("timer_start");
 
     thread setup_splits_and_labels();
     thread update_livesplit_data();
@@ -252,12 +254,7 @@ draw_client_split( index )
 
 timer_start_wait()
 {
-    flag_init("timer_end");
-    flag_clear("timer_end");
-    flag_init("timer_start");
-    flag_clear("timer_start");
     level thread game_start_check();
-
     flag_wait("timer_start");
     level.T6EE_START_TIME = gettime();
 }
@@ -494,11 +491,50 @@ upgrades_bank()
         }
     }
 
+    flag_wait( "initial_players_connected" );
+
+    if(level.script == "zm_highrise")
+    {
+        self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
+        self player_rig_fridge("svu_upgraded_zm");
+    }
+
     flag_wait("initial_blackscreen_passed");
     if(getdvarint("full_bank"))
     {
         self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
         self.account_value = level.bank_account_max;
+    }
+}
+
+player_rig_fridge(weapon)
+{
+    self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
+
+    wpn = [];
+    wpn["clip"] = weaponclipsize(weapon);
+    wpn["stock"] = weaponmaxammo(weapon);
+    wpn["dw_name"] = weapondualwieldweaponname(weapon);
+    wpn["alt_name"] = weaponaltweaponname(weapon);
+    wpn["lh_clip"] = weaponclipsize(wpn["dw_name"]);
+    wpn["alt_clip"] = weaponclipsize(wpn["alt_name"]);
+    wpn["alt_stock"] = weaponmaxammo(wpn["alt_name"]);
+
+    self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "name", weapon);
+    self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "clip", wpn["clip"]);
+    self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "stock", wpn["stock"]);
+
+    if (isdefined(wpn["alt_name"]) && wpn["alt_name"] != "")
+    {
+        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_name", wpn["alt_name"]);
+        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_clip", wpn["alt_clip"]);
+        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_stock", wpn["alt_stock"]);
+    }
+
+    if (isdefined(wpn["dw_name"]) && wpn["dw_name"] != "")
+    {
+        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "dw_name", wpn["dw_name"]);
+        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "lh_clip", wpn["lh_clip"]);
     }
 }
 
