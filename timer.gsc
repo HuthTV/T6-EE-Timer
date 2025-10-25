@@ -21,7 +21,7 @@ main()
     }
     //write empty livesplit data file
     livesplit_handle = fs_fopen(level.T6EE_LIVESPLIT_FILE, "write");
-    fs_write( livesplit_handle, "0|0" );
+    fs_write( livesplit_handle, "0|0" );    // split|time
     fs_fclose( livesplit_handle );
 }
 
@@ -255,19 +255,25 @@ draw_client_split( index )
 timer_start_wait()
 {
     level thread game_start_check();
+    level thread mob_start_check( level.script == "zm_prison" );
     flag_wait("timer_start");
-    level.T6EE_START_TIME = gettime();
+    
 }
 
 game_start_check()
 {
-    if(level.script == "zm_prison") level thread mob_start_check();
     flag_wait( "initial_blackscreen_passed" );
-    flag_set("timer_start");
+    if(!isdefined(level.T6EE_START_TIME)) 
+    {
+        level.T6EE_START_TIME = gettime();
+        flag_set("timer_start");
+    }
 }
 
-mob_start_check()
+mob_start_check( is_mob )
 {
+    if(!is_mob) return;
+    flag_wait( "initial_players_connected" );
     players = getplayers();
     while(!flag("timer_start"))
     {
@@ -276,7 +282,12 @@ mob_start_check()
             if(isdefined(ghost.afterlife_visionset) && ghost.afterlife_visionset == 1)
             {
                 wait 0.45;
-                flag_set("timer_start");
+                if(!isdefined(level.T6EE_START_TIME)) 
+                {
+                    level.T6EE_START_TIME = gettime();
+                    flag_set("timer_start");
+                    return;
+                }
             }
         }
         wait 0.05;
@@ -473,8 +484,9 @@ upgrade_dvars()
             level.T6EE_upgrades[level.T6EE_upgrades.size] = stat_name;
     }
 
+    insta = level.script != "zm_transit";
     set_dvar_if_unset("full_bank", 1);
-    set_dvar_if_unset("pers_insta_kill", level.script != "zm_transit");
+    set_dvar_if_unset("pers_insta_kill", insta);
 
     foreach(pers_perk in  level.T6EE_upgrades)
         set_dvar_if_unset(pers_perk, 1);
@@ -738,7 +750,11 @@ precache_hud_strings(map)
             precachestring( &"ZM_BURIED_EQ_SP_HTS");//springpad
             precachestring( &"ZM_BURIED_EQ_SW_HTS");//subwoof
             precachestring( &"ZM_BURIED_EQ_HC_HTS");//headchopper
-            
+
+            precachestring( &"ZM_BURIED_GIVING");
+            precachestring( &"ZOMBIE_TIMEBOMB_PICKUP");
+            precachestring( &"ZOMBIE_TIMEBOMB_HOWTO");
+
             precachestring( &"ZM_BURIED_BOOZE_G");
             precachestring( &"ZM_BURIED_BOOZE_B");
             precachestring( &"ZM_BURIED_I_NEED_BOOZE");
