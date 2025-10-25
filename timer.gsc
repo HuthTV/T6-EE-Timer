@@ -29,15 +29,14 @@ init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
     level.T6EE_VERSION = "timer version";
-    level.T6EE_HUD_ENABLED = int(level.T6EE_CFG["hud_timer"]);
+    level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
     level.T6EE_SPLIT = [];
-    //constants for timer hud elements
     level.T6EE_ACTIVE_COLOR = (0.99, 0.91, 0.99);
     level.T6EE_COMPLETE_COLOR = (0.99, 0.58, 0.99);
     level.T6EE_X_OFFSET = 2;
-    level.T6EE_Y_OFFSET = -34;
     level.T6EE_Y_INCREMENT = 16;
+    level.T6EE_Y_OFFSET = -34;
     level.T6EE_Y_MAP_OFFSET["zm_prison"] = 16;
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
@@ -59,7 +58,7 @@ init()
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
     {
         level.T6EE_SPLIT[split] = spawnstruct();
-        if(level.T6EE_HUD_ENABLED) level.T6EE_SPLIT[split].timer = newhudelem();
+        if(level.T6EE_HUD) level.T6EE_SPLIT[split].timer = newhudelem();
         level.T6EE_SPLIT[split] process_split();
     }
     flag_set("timer_end");
@@ -162,7 +161,7 @@ handle_chat_commands()
         switch (msg)
         {
             case "timer":
-                status = int(level.T6EE_HUD_ENABLED);
+                status = int(level.T6EE_HUD);
                 level.T6EE_CFG["hud_timer"] = !status;
                 player iprintln("HUD Timer " + (status ? "disabled" : "enabled") + " - restart map");
                 write_config();
@@ -211,7 +210,7 @@ process_split()
     self.split_index = level.T6EE_SPLIT_NUM;
     self.split_id = level.T6EE_SPLIT_LIST[self.split_index];
 
-    if(level.T6EE_HUD_ENABLED)
+    if(level.T6EE_HUD)
     {
         self.split_label = level.T6EE_LABELS[self.split_id];
         self.timer draw_client_split(self.split_index);
