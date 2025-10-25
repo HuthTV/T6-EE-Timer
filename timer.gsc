@@ -28,7 +28,7 @@ main()
 init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
-    level.T6EE_VERSION = "timer version";
+    level.T6EE_VERSION = "V5.0";
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
     level.T6EE_SPLIT = [];
@@ -81,7 +81,7 @@ on_player_spawned()
     self waittill("spawned_player");
     if(upgrades_active()) self thread upgrades_bank();
     wait 2.6;
-    self iprintln("^8[^1R" + getSubStr(getDvar("version"), 23, 27) +"^8]" + "^8[^3EE Timer^8][^5" + level.T6EE_VERSION + "^8]^7 github.com/HuthTV/T6-EE-Timer");
+    self iprintln("^8[^1R" + getSubStr(getDvar("version"), 23, 27) +"^8]" + "^8[^3T6EE^8][^5" + level.T6EE_VERSION + "^8]^7 github.com/HuthTV/T6-EE-Timer");
 }
 
 process_split()
@@ -234,15 +234,6 @@ apply_strafe_settings()
 {
     console_strafe = int(level.T6EE_CFG["console_strafe"]);
     set_strafe_speed( console_strafe );
-    back_speed = getdvarfloat("player_backSpeedScale");
-    side_speed = getdvarfloat("player_strafeSpeedScale");
-    flag_wait("initial_players_connected");
-    wait 2.5;
-    if(back_speed != 0.7 || side_speed != 0.8)
-    {
-        iprintln("player_backSpeedScale: " + getdvar("player_backSpeedScale"));
-        iprintln("player_strafeSpeedScale: " + getdvar("player_strafeSpeedScale"));  
-    }
 }
 
 draw_client_split( index )
