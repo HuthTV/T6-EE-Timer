@@ -44,8 +44,7 @@ init()
     flag_init("timer_start");
 
     thread setup_splits_and_labels();
-    thread update_livesplit_data();
-    thread overflow_fix();
+    thread overflow_manager();
     thread on_player_connect();
     thread run_anticheat();
     thread verify_network_frame();
@@ -60,6 +59,7 @@ init()
         level.T6EE_SPLIT[split] = spawnstruct();
         if(level.T6EE_HUD) level.T6EE_SPLIT[split].timer = newhudelem();
         level.T6EE_SPLIT[split] process_split();
+        wait 0.05;
     }
     flag_set("timer_end");
 }
@@ -84,70 +84,44 @@ on_player_spawned()
     self iprintln("^8[^1R" + getSubStr(getDvar("version"), 23, 27) +"^8]" + "^8[^3EE Timer^8][^5" + level.T6EE_VERSION + "^8]^7 github.com/HuthTV/T6-EE-Timer");
 }
 
-speedometer()
+process_split()
 {
-    self endon("kill_speedometer");
-    flag_wait("timer_start");
-    self.speedometer = createfontstring("default" , 1.4);
-    self.speedometer.alpha = 0.8;
-    self.speedometer.hidewheninmenu = 1;
-    self.speedometer setpoint("CENTER", "CENTER", "CENTER", 200);
+    self.split_index = level.T6EE_SPLIT_NUM;
+    self.split_id = level.T6EE_SPLIT_LIST[self.split_index];
 
-    while (true)
+    if(level.T6EE_HUD)
     {
-        vel = int(length(self getvelocity() * (1, 1, 0))); //ignore vertical velocity
-        self.speedometer set_velocity_color(vel, self hasperk("specialty_longersprint"));
-        self.speedometer setValue(vel);
+        self.split_label = level.T6EE_LABELS[self.split_id];
+        self.timer draw_client_split(self.split_index);  
+    }
+    self thread split_refresh();
+    wait_for_split(self.split_id);
+    if(self.split_id == "jetgun_power_off")
+    {
+        handle_tranzit_branch();
+    }
+    level.T6EE_SPLIT_NUM++;
+}
+
+split_refresh()
+{
+    while(true)
+    {
+        time = gettime() - level.T6EE_START_TIME;
+
+        if(level.T6EE_HUD)
+        {
+            frame_string = "^3" + self.split_label + " ^7" + game_time_string(time);
+            self.split_string = frame_string;
+            self.timer set_safe_text(frame_string);
+        }
+
+        write_livesplit_data(time);
+
+        if(self.split_index < level.T6EE_SPLIT_NUM) break;
         wait 0.05;
     }
-}
-
-set_velocity_color(vel, stamina_up)
-{
-    //Speed range for color gradient
-
-    if(stamina_up)
-    {
-        min_speed = 310.0;
-        max_speed = 390.0;
-    }
-    else
-    {
-        min_speed = 260.0;
-        max_speed = 350.0;
-    }
-
-    //clamp value 0-1
-    ratio = (vel - min_speed) / (max_speed - min_speed);
-    ratio = max(0, min(1, ratio));
-
-    if (ratio < 0.5)
-    {
-        rt = ratio / 0.5;
-        self.color = (0.6 + 0.4 * rt, 1.0, 0.6); // green -> yellow
-        self.glowcolor = (0.4 + 0.3 * rt, 0.7, 0.4);
-    }
-    else
-    {
-        rt = (ratio - 0.5) / 0.5;
-        self.color = (1.0, 1.0 - 0.8 * rt, 0.6 - 0.6 * rt); // yellow -> red
-        self.glowcolor = (0.7, 0.7 - 0.6 * rt, 0.4 - 0.4 * rt);
-    }
-}
-
-apply_strafe_settings()
-{
-    console_strafe = int(level.T6EE_CFG["console_strafe"]);
-    set_strafe_speed( console_strafe );
-    back_speed = getdvarfloat("player_backSpeedScale");
-    side_speed = getdvarfloat("player_strafeSpeedScale");
-    flag_wait("initial_players_connected");
-    wait 2.5;
-    if(back_speed != 0.7 || side_speed != 0.8)
-    {
-        iprintln("player_backSpeedScale: " + getdvar("player_backSpeedScale"));
-        iprintln("player_strafeSpeedScale: " + getdvar("player_strafeSpeedScale"));  
-    }
+    self.timer.color = level.T6EE_COMPLETE_COLOR;
 }
 
 handle_chat_commands()
@@ -205,35 +179,70 @@ handle_chat_commands()
     }
 }
 
-process_split()
+set_velocity_color(vel, stamina_up)
 {
-    self.split_index = level.T6EE_SPLIT_NUM;
-    self.split_id = level.T6EE_SPLIT_LIST[self.split_index];
+    //Speed range for color gradient
 
-    if(level.T6EE_HUD)
+    if(stamina_up)
     {
-        self.split_label = level.T6EE_LABELS[self.split_id];
-        self.timer draw_client_split(self.split_index);
-        self thread refresh_timer_text();
+        min_speed = 310.0;
+        max_speed = 390.0;
     }
-    wait_for_split(self.split_id);
-    if(self.split_id == "jetgun_power_off")
+    else
     {
-        handle_tranzit_branch();
+        min_speed = 260.0;
+        max_speed = 350.0;
     }
-    level.T6EE_SPLIT_NUM++;
+
+    //clamp value 0-1
+    ratio = (vel - min_speed) / (max_speed - min_speed);
+    ratio = max(0, min(1, ratio));
+
+    if (ratio < 0.5)
+    {
+        rt = ratio / 0.5;
+        self.color = (0.6 + 0.4 * rt, 1.0, 0.6); // green -> yellow
+        self.glowcolor = (0.4 + 0.3 * rt, 0.7, 0.4);
+    }
+    else
+    {
+        rt = (ratio - 0.5) / 0.5;
+        self.color = (1.0, 1.0 - 0.8 * rt, 0.6 - 0.6 * rt); // yellow -> red
+        self.glowcolor = (0.7, 0.7 - 0.6 * rt, 0.4 - 0.4 * rt);
+    }
 }
 
-refresh_timer_text()
+speedometer()
 {
-    while(self.split_index == level.T6EE_SPLIT_NUM)
+    self endon("kill_speedometer");
+    flag_wait("timer_start");
+    self.speedometer = createfontstring("default" , 1.4);
+    self.speedometer.alpha = 0.8;
+    self.speedometer.hidewheninmenu = 1;
+    self.speedometer setpoint("CENTER", "CENTER", "CENTER", 200);
+
+    while (true)
     {
-        frame_string = "^3" + self.split_label + " ^7" + game_time_string(gettime() - level.T6EE_START_TIME);
-        self.split_string = frame_string;
-        self.timer set_safe_text(frame_string);
+        vel = int(length(self getvelocity() * (1, 1, 0))); //ignore vertical velocity
+        self.speedometer set_velocity_color(vel, self hasperk("specialty_longersprint"));
+        self.speedometer setValue(vel);
         wait 0.05;
     }
-    self.timer.color = level.T6EE_COMPLETE_COLOR;
+}
+
+apply_strafe_settings()
+{
+    console_strafe = int(level.T6EE_CFG["console_strafe"]);
+    set_strafe_speed( console_strafe );
+    back_speed = getdvarfloat("player_backSpeedScale");
+    side_speed = getdvarfloat("player_strafeSpeedScale");
+    flag_wait("initial_players_connected");
+    wait 2.5;
+    if(back_speed != 0.7 || side_speed != 0.8)
+    {
+        iprintln("player_backSpeedScale: " + getdvar("player_backSpeedScale"));
+        iprintln("player_strafeSpeedScale: " + getdvar("player_strafeSpeedScale"));  
+    }
 }
 
 draw_client_split( index )
@@ -316,18 +325,12 @@ game_over_wait()
     flag_set("game_over");
 }
 
-update_livesplit_data()
+write_livesplit_data( time )
 {
-    flag_wait("timer_start");
-    while(!flag("game_over"))
-    {
-        if(level.T6EE_SPLIT_NUM == level.T6EE_SPLIT_LIST.size) flag_set("game_over");
         livesplit_handle = fs_fopen(level.T6EE_LIVESPLIT_FILE, "write");
-        livesplit_data = level.T6EE_SPLIT_NUM + "|" + (getTime() - level.T6EE_START_TIME);
+        livesplit_data = level.T6EE_SPLIT_NUM + "|" + (time);
         fs_write( livesplit_handle, livesplit_data );
         fs_fclose( livesplit_handle );
-        wait 0.05;
-    }
 }
 
 wait_for_split(split)
