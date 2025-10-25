@@ -66,10 +66,10 @@ init()
 
 on_player_connect()
 {
-    level endon( "game_ended" );
+    level endon("game_ended");
     while(true)
     { 
-        level waittill( "connected", player );
+        level waittill("connected", player);
         player thread on_player_spawned();
         if(int(level.T6EE_CFG["hud_speed"]) == 1)
             player thread speedometer();
@@ -78,7 +78,7 @@ on_player_connect()
 
 on_player_spawned()
 {
-    self waittill( "spawned_player" );
+    self waittill("spawned_player");
     if(upgrades_active()) self thread upgrades_bank();
     wait 2.6;
     self iprintln("^8[^1R" + getSubStr(getDvar("version"), 23, 27) +"^8]" + "^8[^3EE Timer^8][^5" + level.T6EE_VERSION + "^8]^7 github.com/HuthTV/T6-EE-Timer");
@@ -86,7 +86,7 @@ on_player_spawned()
 
 speedometer()
 {
-    self endon( "kill_speedometer" );
+    self endon("kill_speedometer");
     flag_wait("timer_start");
     self.speedometer = createfontstring("default" , 1.4);
     self.speedometer.alpha = 0.8;
@@ -141,7 +141,7 @@ apply_strafe_settings()
     set_strafe_speed( console_strafe );
     back_speed = getdvarfloat("player_backSpeedScale");
     side_speed = getdvarfloat("player_strafeSpeedScale");
-    flag_wait( "initial_players_connected" );
+    flag_wait("initial_players_connected");
     wait 2.5;
     if(back_speed != 0.7 || side_speed != 0.8)
     {
@@ -152,7 +152,7 @@ apply_strafe_settings()
 
 handle_chat_commands()
 {
-    flag_wait( "initial_blackscreen_passed" );
+    flag_wait("initial_blackscreen_passed");
     while(true)
     {
         level waittill("say", message, player);
@@ -261,7 +261,7 @@ timer_start_wait()
 
 game_start_check()
 {
-    flag_wait( "initial_blackscreen_passed" );
+    flag_wait("initial_blackscreen_passed");
     if(!isdefined(level.T6EE_START_TIME)) 
     {
         level.T6EE_START_TIME = gettime();
@@ -272,7 +272,7 @@ game_start_check()
 mob_start_check( is_mob )
 {
     if(!is_mob) return;
-    flag_wait( "initial_players_connected" );
+    flag_wait("initial_players_connected");
     players = getplayers();
     while(!flag("timer_start"))
     {
@@ -311,7 +311,7 @@ handle_tranzit_branch()
 game_over_wait()
 {
     flag_init("game_over");
-    level waittill( "end_game" );
+    level waittill("end_game");
     wait 1;
     flag_set("game_over");
 }
@@ -336,7 +336,7 @@ wait_for_split(split)
     {
         //Tranzit
         case "jetgun_power_off":
-            level waittill( "power_event_complete" );
+            level waittill("power_event_complete");
             split = false;
             while(!split)
             {
@@ -372,11 +372,11 @@ wait_for_split(split)
 
         //Die Rise
         case "highrise_symbols":
-            flag_wait( "sq_atd_drg_puzzle_complete" );
+            flag_wait("sq_atd_drg_puzzle_complete");
             break;
 
         case "highrise_perks":
-            level waittill( "sq_fireball_hit_player" );
+            level waittill("sq_fireball_hit_player");
             break;
 
         //Mob
@@ -399,7 +399,7 @@ wait_for_split(split)
             break;
 
         case "codes":
-            level waittill_multiple( "nixie_final_" + 386, "nixie_final_" + 481, "nixie_final_" + 101, "nixie_final_" + 872 );
+            level waittill_multiple("nixie_final_" + 386, "nixie_final_" + 481, "nixie_final_" + 101, "nixie_final_" + 872);
             break;
 
         case "headphones":
@@ -452,7 +452,7 @@ wait_for_split(split)
             break;
 
         case "freedom":
-            flag_wait( "ee_samantha_released" );
+            flag_wait("ee_samantha_released");
             level waittill("end_game");
             break;
     }
@@ -502,7 +502,7 @@ upgrades_bank()
         }
     }
 
-    flag_wait( "initial_players_connected" );
+    flag_wait("initial_players_connected");
 
     if(level.script == "zm_highrise")
     {
@@ -614,19 +614,21 @@ write_config()
 
 setup_splits_and_labels()
 {
-    flag_wait( "initial_players_connected" );
+    flag_wait("initial_players_connected");
 
-    //tranzit
+    // ====== Split Name Labels ======
+
+    // Tranzit
     level.T6EE_LABELS["jetgun_power_off"] = "Jetgun/Power off";
     level.T6EE_LABELS["turbines"] = "Turbines";
     level.T6EE_LABELS["tower"] = "Tower";
     level.T6EE_LABELS["EMP"] = "Lights";
 
-    //die rise
+    // Die Rise
     level.T6EE_LABELS["highrise_symbols"] = "Symbols";
     level.T6EE_LABELS["highrise_perks"] = "High Maintenance";
 
-    //mob of the dead
+    // Mob of the Dead
     level.T6EE_LABELS["dryer"] = "Dryer";
     level.T6EE_LABELS["gondola_1"] = "Gondola I";
     level.T6EE_LABELS["gondola_2"] = "Gondola II";
@@ -638,12 +640,12 @@ setup_splits_and_labels()
     level.T6EE_LABELS["headphones"] = "Headphones";
     level.T6EE_LABELS["fight"] = "Showdown";
 
-    //buried
+    // Buried
     level.T6EE_LABELS["cipher"] = "Cipher";
     level.T6EE_LABELS["time_travel"] = "Time Travel";
     level.T6EE_LABELS["sharpshooter"] = "Sharpshooter";
 
-    //origins
+    // Origins
     level.T6EE_LABELS["NML"] = "NML";
     level.T6EE_LABELS["boxes"] = "Boxes";
     level.T6EE_LABELS["staff_1"] = "Staff I";
@@ -654,6 +656,9 @@ setup_splits_and_labels()
     level.T6EE_LABELS["rain_fire"] = "Rain Fire";
     level.T6EE_LABELS["freedom"] = "Freedom";
 
+    // ====== Split Lists ======
+
+    splits = [];
     splits["zm_transit"] = array("jetgun_power_off");
     splits["zm_highrise"] = strtok("highrise_symbols|highrise_perks", "|");
     splits["zm_buried"] = strtok("cipher|time_travel|sharpshooter", "|");
@@ -675,18 +680,21 @@ setup_splits_and_labels()
 set_safe_text(text)
 {
 	level.string_count += 1;
-	level notify("textset");
+
+	level notify("textset");  // Notify overflow monitor on setText
     self.text_string = text;
 	self setText(text);
 }
 
-overflow_fix()
+overflow_manager()
 {
     level endon("game_ended");
 	level endon("host_migration_begin");
+
     thread precache_hud_strings( level.script );
-    flag_wait( "timer_start" );
-    //overflow hud element will be stopgap to reset configstring limit
+    flag_wait("timer_start");
+
+    // all strings allocated after this will be periodically removed
     level.overflow = newhudelem();
     level.overflow setText("overflow");
     level.overflow.alpha = 0;
@@ -697,14 +705,16 @@ overflow_fix()
     while(true)
     {
             level waittill("textset");
+
             if(level.string_count >= max_string_count)
             {
                 level.overflow ClearAllTextAfterHudElem();
                 level.string_count = 0;
+
                 foreach(elem in level.T6EE_SPLIT)
                 {
                     if(isdefined(elem.timer))
-                    elem.timer set_safe_text(elem.split_string);
+                        elem.timer set_safe_text(elem.split_string);
                 }
             }
     }
@@ -712,7 +722,7 @@ overflow_fix()
 
 precache_hud_strings(map)
 {
-    //precache string that are normally not precached to avoid overflowfix issues
+    //precache string that are normally not precached to avoid timer clearing them
     switch(map)
     {
         case "zm_transit":
@@ -790,30 +800,32 @@ precache_hud_strings(map)
     precachestring( &"ZOMBIE_REVIVING_SOLO");
     precachestring( &"ZOMBIE_SUICIDING");
 
-    flag_wait( "initial_players_connected" );
+    flag_wait("initial_players_connected");
     //chache string that are player name specific ahead of time
     tmp_strings = [];
     runners = getplayers();
 
+    // Shared strings
+    foreach(p in runners)
+    {
+        tmp_strings[p.name + "ZPIRY"] = newhudelem();
+        tmp_strings[p.name + "ZPIRY"] settext( &"ZOMBIE_PLAYER_IS_REVIVING_YOU", p);
+        tmp_strings[p.name + "ZPIRY"].alpha = 0;
+
+        tmp_strings[p.name + "ZPNTBR"] = newhudelem();
+        tmp_strings[p.name + "ZPNTBR"] settext( &"ZOMBIE_PLAYER_NEEDS_TO_BE_REVIVED", p);
+        tmp_strings[p.name + "ZPNTBR"].alpha = 0;
+    } 
+
+    // mob/gins specific strings
     if(map == "zm_prison" || map == "zm_tomb")
     {
-        foreach(p in runners)  //afterlife/maxis
+        foreach(p in runners) 
         {
-            tmp_strings[p.name + "gm_is_rev"] = newhudelem();
-            tmp_strings[p.name + "gm_is_rev"] settext( &"GAME_PLAYER_IS_REVIVING_YOU", p);
-            tmp_strings[p.name + "gm_is_rev"].alpha = 0;
+            tmp_strings[p.name + "GPIRY"] = newhudelem();
+            tmp_strings[p.name + "GPIRY"] settext( &"GAME_PLAYER_IS_REVIVING_YOU", p);
+            tmp_strings[p.name + "GPIRY"].alpha = 0;
         }
-    }
-
-    foreach(p in runners) //normal revive
-    {
-        tmp_strings[p.name + "zm_is_rev"] = newhudelem();
-        tmp_strings[p.name + "zm_is_rev"] settext( &"ZOMBIE_PLAYER_IS_REVIVING_YOU", p);
-        tmp_strings[p.name + "zm_is_rev"].alpha = 0;
-
-        tmp_strings[p.name + "zm_need_rev"] = newhudelem();
-        tmp_strings[p.name + "zm_need_rev"] settext( &"ZOMBIE_PLAYER_NEEDS_TO_BE_REVIVED", p);
-        tmp_strings[p.name + "zm_need_rev"].alpha = 0;
     }   
 }
 
@@ -825,20 +837,16 @@ game_time_string(duration)
     }
 
 	total_sec = int(duration / 1000);
-	mn = int(total_sec / 60);       //minutes
-	se = int(total_sec % 60);       //seconds
-    ce = (duration % 1000) / 10;    //centiseconds
     time_string = "";
+ 
+    mn = int(total_sec / 60);       //minutes
+    time_string += (mn > 9) ? int(mn) : "0" + int(mn); // minutes
 
-    //minutes
-    if(mn > 9)        { time_string = time_string + int(mn); }
-	else              { time_string = time_string + "0" + int(mn); }
-    //seconds
-	if(se > 9)        { time_string = time_string + ":" + se; }
-	else              { time_string = time_string + ":0" + se; }
-    //centiseconds
-    if(ce > 9)        { time_string = time_string + "." + int(ce); }
-    else              { time_string = time_string + ".0" + int(ce); }
+    se = int(total_sec % 60);       //seconds
+    time_string += (se > 9) ? ":" + se : ":0" + se; // seconds
+
+    ce = (duration % 1000) / 10;    //centiseconds
+    time_string += (ce > 9) ? "." + int(ce) : ".0" + int(ce); // centiseconds
 
 	return time_string;
 }
