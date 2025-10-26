@@ -1,11 +1,12 @@
 state("plutonium-bootstrapper-win32")
 {
-    string11 map_name:  0x00EC3D5C; //zm_mapname
 }
 
 startup
 {
 	refreshRate = 40;
+
+	vars.mapName = "zm_map";
 	vars.splitValue = 0;
 	vars.timeValue = 0;
 
@@ -51,11 +52,11 @@ update
         {
             using (StreamReader r = new StreamReader(new FileStream(vars.filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
             {
-                vars.timerString = r.ReadToEnd();
-                string[] data = vars.timerString.Split('|');
-                if (data.Length >= 2)
+                string[] data = r.ReadToEnd().Split('|');
+                if (data.Length >= 3)
                 {
-                    if (int.TryParse(data[0], out int parsedSplits) && int.TryParse(data[1], out int parsedTime))
+                    vars.mapName = data[0];
+                    if (int.TryParse(data[1], out int parsedSplits) && int.TryParse(data[2], out int parsedTime))
                     {
                         vars.splitValue = parsedSplits;
                         vars.timeValue = parsedTime;
@@ -80,7 +81,7 @@ start
 {
 	if(vars.timeValue == 50) //start after game writes 1st tick in T6EE.dat
 	{
-		vars.splits = vars.map_splits[current.map_name.Trim()];
+		vars.splits = vars.map_splits[vars.mapName];
 		vars.split = 0;
 		return true;
 	}
