@@ -1,14 +1,15 @@
 state("plutonium-bootstrapper-win32")
 {
-    string11 map_name:  0x00EC3D5C; //zm_mapname
 }
 
 startup
 {
 	refreshRate = 40;
+
+	vars.mapName = "zm_map";
 	vars.splitValue = 0;
 	vars.timeValue = 0;
-    
+
     vars.map_splits = new Dictionary<string, string[]>
     {
         { "zm_transit", new[] { "Jetgun/Power Off", "Tower/Turbines", "Emp" } },
@@ -27,7 +28,7 @@ startup
 		{ "zm_tomb", "Origins" }
 	};
 
-    
+
     foreach (var map in vars.map_splits)
     {
         string uiName = vars.map_uiNames[map.Key];
@@ -45,16 +46,25 @@ startup
 
 update
 {
-	if(File.Exists(vars.filePath))
-	{
-		using (StreamReader r = new StreamReader(new FileStream(vars.filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-		{
-			vars.timerString = r.ReadToEnd();
-			string[] data = vars.timerString.Split('|');
-			vars.splitValue = int.Parse(data[0]);
-			vars.timeValue = int.Parse(data[1]);
-		}
-	}
+    try
+    {
+        if(File.Exists(vars.filePath))
+        {
+            using (StreamReader r = new StreamReader(new FileStream(vars.filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+            {
+                string[] data = r.ReadToEnd().Split('|');
+                if (data.Length >= 3)
+                {
+                    vars.mapName = data[0];
+                    if (int.TryParse(data[1], out int parsedSplits) && int.TryParse(data[2], out int parsedTime))
+                    {
+                        vars.splitValue = parsedSplits;
+                        vars.timeValue = parsedTime;
+                    }
+                }
+            }
+        }
+    } catch (Exception) {}
 }
 
 gameTime
@@ -71,7 +81,7 @@ start
 {
 	if(vars.timeValue == 50) //start after game writes 1st tick in T6EE.dat
 	{
-		vars.splits = vars.map_splits[current.map_name.Trim()];
+		vars.splits = vars.map_splits[vars.mapName];
 		vars.split = 0;
 		return true;
 	}

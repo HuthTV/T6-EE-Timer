@@ -11,17 +11,17 @@ main()
     level.T6EE_SETTINGS_FILE = "T6EE.cfg";
 
     init_default_config();
-    if(fs_testfile(level.T6EE_SETTINGS_FILE)) 
+    if(fs_testfile(level.T6EE_SETTINGS_FILE))
     {
         read_config();  //read cfg file if exists
     }
-    else 
+    else
     {
         write_config(); //create default cfg file
     }
     //write empty livesplit data file
     livesplit_handle = fs_fopen(level.T6EE_LIVESPLIT_FILE, "write");
-    fs_write( livesplit_handle, "0|0" );    // split|time
+    fs_write( livesplit_handle, "zm_map|0|0" );    // map|split|time
     fs_fclose( livesplit_handle );
 }
 
@@ -68,7 +68,7 @@ on_player_connect()
 {
     level endon("game_ended");
     while(true)
-    { 
+    {
         level waittill("connected", player);
         player thread on_player_spawned();
         if(int(level.T6EE_CFG["hud_speed"]) == 1)
@@ -92,7 +92,7 @@ process_split()
     if(level.T6EE_HUD)
     {
         self.split_label = level.T6EE_LABELS[self.split_id];
-        self.timer draw_client_split(self.split_index);  
+        self.timer draw_client_split(self.split_index);
     }
     self thread split_refresh();
     wait_for_split(self.split_id);
@@ -256,13 +256,13 @@ timer_start_wait()
     level thread game_start_check();
     level thread mob_start_check( level.script == "zm_prison" );
     flag_wait("timer_start");
-    
+
 }
 
 game_start_check()
 {
     flag_wait("initial_blackscreen_passed");
-    if(!isdefined(level.T6EE_START_TIME)) 
+    if(!isdefined(level.T6EE_START_TIME))
     {
         level.T6EE_START_TIME = gettime();
         flag_set("timer_start");
@@ -281,7 +281,7 @@ mob_start_check( is_mob )
             if(isdefined(ghost.afterlife_visionset) && ghost.afterlife_visionset == 1)
             {
                 wait 0.45;
-                if(!isdefined(level.T6EE_START_TIME)) 
+                if(!isdefined(level.T6EE_START_TIME))
                 {
                     level.T6EE_START_TIME = gettime();
                     flag_set("timer_start");
@@ -319,7 +319,7 @@ game_over_wait()
 write_livesplit_data( time )
 {
         livesplit_handle = fs_fopen(level.T6EE_LIVESPLIT_FILE, "write");
-        livesplit_data = level.T6EE_SPLIT_NUM + "|" + (time);
+        livesplit_data = level.script + "|" + level.T6EE_SPLIT_NUM + "|" + (time);
         fs_write( livesplit_handle, livesplit_data );
         fs_fclose( livesplit_handle );
 }
@@ -398,7 +398,7 @@ wait_for_split(split)
 
         case "headphones":
             wait 10;
-            while( isdefined(level.m_headphones) ) wait 0.05; 
+            while( isdefined(level.m_headphones) ) wait 0.05;
             break;
 
         case "fight":
@@ -458,7 +458,7 @@ run_anticheat()
 {
     setdvar("cg_flashScriptHashes", 1);
     setdvar("cg_drawIdentifier", 1);
-    flag_wait("timer_end");    
+    flag_wait("timer_end");
     cmdexec("flashScriptHashes");
 }
 
@@ -762,8 +762,8 @@ precache_hud_strings(map)
             precachestring( &"ZM_BURIED_BOOZE_B");
             precachestring( &"ZM_BURIED_I_NEED_BOOZE");
             precachestring( &"ZM_BURIED_I_SAID_BOOZE");
-            
-            precachestring( &"ZM_BURIED_CANDY_G");  
+
+            precachestring( &"ZM_BURIED_CANDY_G");
             precachestring( &"ZM_BURIED_CANDY_B");
             precachestring( &"ZM_BURIED_I_WANT_CANDY");
             precachestring( &"ZM_BURIED_THATS_NOT_CANDY");
@@ -809,18 +809,18 @@ precache_hud_strings(map)
         tmp_strings[p.name + "ZPNTBR"] = newhudelem();
         tmp_strings[p.name + "ZPNTBR"] settext( &"ZOMBIE_PLAYER_NEEDS_TO_BE_REVIVED", p);
         tmp_strings[p.name + "ZPNTBR"].alpha = 0;
-    } 
+    }
 
     // mob/gins specific strings
     if(map == "zm_prison" || map == "zm_tomb")
     {
-        foreach(p in runners) 
+        foreach(p in runners)
         {
             tmp_strings[p.name + "GPIRY"] = newhudelem();
             tmp_strings[p.name + "GPIRY"] settext( &"GAME_PLAYER_IS_REVIVING_YOU", p);
             tmp_strings[p.name + "GPIRY"].alpha = 0;
         }
-    }   
+    }
 }
 
 game_time_string(duration)
@@ -832,7 +832,7 @@ game_time_string(duration)
 
 	total_sec = int(duration / 1000);
     time_string = "";
- 
+
     mn = int(total_sec / 60);       //minutes
     time_string += (mn > 9) ? int(mn) : "0" + int(mn); // minutes
 
