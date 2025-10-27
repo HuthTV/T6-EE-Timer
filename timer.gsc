@@ -28,7 +28,7 @@ main()
 init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
-    level.T6EE_VERSION = "V5.0";
+    level.T6EE_VERSION = "V5.1";
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
     level.T6EE_SPLIT = [];
@@ -43,15 +43,20 @@ init()
     flag_init("timer_end");
     flag_init("timer_start");
 
-    thread setup_splits_and_labels();
-    thread overflow_manager();
+    if(level.T6EE_HUD) //HUD off → prevent conflict with other scripts
+    {
+        thread overflow_manager();
+        thread precache_hud_strings( level.script );
+    }
+
     thread on_player_connect();
-    thread run_anticheat();
     thread verify_network_frame();
+    thread run_anticheat();
     thread apply_strafe_settings();
+    thread upgrade_dvars();
+    thread setup_splits_and_labels();
     thread handle_chat_commands();
     thread game_over_wait();
-    thread upgrade_dvars();
     timer_start_wait();
 
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
@@ -137,7 +142,7 @@ handle_chat_commands()
             case "timer":
                 status = int(level.T6EE_HUD);
                 level.T6EE_CFG["hud_timer"] = !status;
-                player iprintln("HUD Timer " + (status ? "disabled" : "enabled") + " - restart map");
+                player iprintln("HUD Timer " + (status ? "disabled" : "enabled") + " - use fast restart");
                 write_config();
                 break;
 
@@ -145,7 +150,7 @@ handle_chat_commands()
                 status = int(level.T6EE_CFG["console_strafe"]);
                 set_strafe_speed(!status);
                 level.T6EE_CFG["console_strafe"] = !status;
-                player iprintln("Strafe speed " + (status ? "pc" : "console"));
+                player iprintln("Strafe speeds - " + (status ? "PC" : "Console"));
                 write_config();
                 break;
 
@@ -684,8 +689,6 @@ overflow_manager()
 {
     level endon("game_ended");
 	level endon("host_migration_begin");
-
-    thread precache_hud_strings( level.script );
     flag_wait("timer_start");
 
     // all strings allocated after this will be periodically removed
