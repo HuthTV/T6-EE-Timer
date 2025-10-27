@@ -193,11 +193,21 @@ handle_chat_commands()
     }
 }
 
-set_velocity_color(vel, stamina_up)
+set_speedometer_color()
 {
-    //Speed range for color gradient
 
-    if(stamina_up)
+    velocity = int(length(self getvelocity() * (1, 1, 0))); //ignore vertical velocity
+    self.speedometer setValue(velocity);
+
+    if(isdefined( self.afterlife ) && self.afterlife )
+    {
+        self.speedometer.color = (0.6, 1.0, 1.0);      //pale cyan
+        self.speedometer.glowcolor = (0.3, 0.8, 1.0);  //cyan glow
+        return;
+    }
+
+    //Speed range for color gradient
+    if(self hasperk("specialty_longersprint"))
     {
         min_speed = 310.0;
         max_speed = 390.0;
@@ -209,20 +219,20 @@ set_velocity_color(vel, stamina_up)
     }
 
     //clamp value 0-1
-    ratio = (vel - min_speed) / (max_speed - min_speed);
+    ratio = (velocity - min_speed) / (max_speed - min_speed);
     ratio = max(0, min(1, ratio));
 
     if (ratio < 0.5)
     {
         rt = ratio / 0.5;
-        self.color = (0.6 + 0.4 * rt, 1.0, 0.6); // green -> yellow
-        self.glowcolor = (0.4 + 0.3 * rt, 0.7, 0.4);
+        self.speedometer.color = (0.6 + 0.4 * rt, 1.0, 0.6); // green -> yellow
+        self.speedometer.glowcolor = (0.4 + 0.3 * rt, 0.7, 0.4);
     }
     else
     {
         rt = (ratio - 0.5) / 0.5;
-        self.color = (1.0, 1.0 - 0.8 * rt, 0.6 - 0.6 * rt); // yellow -> red
-        self.glowcolor = (0.7, 0.7 - 0.6 * rt, 0.4 - 0.4 * rt);
+        self.speedometer.color = (1.0, 1.0 - 0.8 * rt, 0.6 - 0.6 * rt); // yellow -> red
+        self.speedometer.glowcolor = (0.7, 0.7 - 0.6 * rt, 0.4 - 0.4 * rt);
     }
 }
 
@@ -233,13 +243,11 @@ speedometer()
     self.speedometer = createfontstring("default" , 1.4);
     self.speedometer.alpha = 0.8;
     self.speedometer.hidewheninmenu = 1;
-    self.speedometer setpoint("CENTER", "CENTER", "CENTER", 200);
+    self.speedometer setpoint("CENTER", "CENTER", "CENTER", 190);
 
     while (true)
     {
-        vel = int(length(self getvelocity() * (1, 1, 0))); //ignore vertical velocity
-        self.speedometer set_velocity_color(vel, self hasperk("specialty_longersprint"));
-        self.speedometer setValue(vel);
+        self set_speedometer_color();
         wait 0.05;
     }
 }
