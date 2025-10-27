@@ -140,9 +140,9 @@ handle_chat_commands()
         switch (msg)
         {
             case "timer":
-                status = int(level.T6EE_HUD);
+                status = int(level.T6EE_CFG["hud_timer"]);
                 level.T6EE_CFG["hud_timer"] = !status;
-                player iprintln("HUD Timer " + (status ? "disabled" : "enabled") + " - use fast restart");
+                iprintln("HUD Timer " + (status ? "^1disabled" : "^2enabled") + "^7 - use ^3fast_restart");
                 write_config();
                 break;
 
@@ -150,14 +150,15 @@ handle_chat_commands()
                 status = int(level.T6EE_CFG["console_strafe"]);
                 set_strafe_speed(!status);
                 level.T6EE_CFG["console_strafe"] = !status;
-                player iprintln("Strafe speeds - " + (status ? "PC" : "Console"));
+                iprintln("Strafe speeds - " + (status ? "^2PC" : "^1Console"));
                 write_config();
                 break;
 
             case "speed":
                 status = int(level.T6EE_CFG["hud_speed"]);
                 level.T6EE_CFG["hud_speed"] = !status;
-                if(isdefined(player.speedometer))
+                speed_active = isdefined(player.speedometer);
+                if(speed_active)
                 {
                     player notify( "kill_speedometer" );
                     player.speedometer destroy();
@@ -166,6 +167,7 @@ handle_chat_commands()
                 {
                     player thread speedometer();
                 }
+                player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"))
                 write_config();
                 break;
 
