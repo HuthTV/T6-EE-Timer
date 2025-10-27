@@ -172,9 +172,16 @@ handle_chat_commands()
                 break;
 
             case "restore":
-                init_default_config();
-                player iprintln("Settings restored to default");
-                write_config();
+                if(player ishost())
+                {
+                    init_default_config();
+                    write_config();
+                    player iprintln("Settings restored to default");
+                }
+                else
+                {
+                    player iprintln("Host only command");
+                }
                 break;
 
             case "r":
