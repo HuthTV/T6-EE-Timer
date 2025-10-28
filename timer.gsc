@@ -46,7 +46,7 @@ init()
     if(level.T6EE_HUD) //HUD off → prevent conflict with other scripts
     {
         thread overflow_manager();
-        thread precache_hud_strings( level.script );
+        thread precache_hud_strings();
     }
 
     thread on_player_connect();
@@ -430,11 +430,11 @@ wait_for_split(split)
 
         //Buried
         case "cipher":
-            wait_for_buildable( "buried_sq_oillamp" );
+            wait_for_buildable("buried_sq_oillamp");
             break;
 
         case "time_travel":
-        while( !flag("sq_tpo_special_round_active") && !flag("sq_wisp_saved_with_time_bomb") ) wait 0.05;
+        while(!flag("sq_tpo_special_round_active") && !flag("sq_wisp_saved_with_time_bomb")) wait 0.05;
             break;
 
         case "sharpshooter":
@@ -472,8 +472,6 @@ wait_for_split(split)
             level waittill("end_game");
             break;
     }
-
-    return gettime();
 }
 
 run_anticheat()
@@ -570,6 +568,7 @@ upgrades_active()
     return maps\mp\zombies\_zm_pers_upgrades::is_pers_system_active();
 }
 
+//Probably not needed anymore, safeguard for future pluto updates
 verify_network_frame()
 {
     flag_wait("initial_blackscreen_passed");
@@ -584,13 +583,13 @@ verify_network_frame()
 incorrect_network_frame()
 {
     solo = level.players.size == 1;
-    coop_delay = 50;
-    solo_delay = 100;
+    COOP_DELAY = 50;
+    SOLO_DELAY = 100;
 
     start = gettime();
     wait_network_frame();
     delay = gettime() - start;
-    return (solo && delay != solo_delay) || (!solo && delay != coop_delay);
+    return (solo && delay != SOLO_DELAY) || (!solo && delay != COOP_DELAY);
 }
 
 init_default_config()
@@ -734,10 +733,10 @@ overflow_manager()
     }
 }
 
-precache_hud_strings(map)
+precache_hud_strings()
 {
     //precache string that are normally not precached to avoid timer clearing them
-    switch(map)
+    switch(level.script)
     {
         case "zm_transit":
             precachestring( &"ZOMBIE_EQUIP_RIOTSHIELD_HOWTO");
@@ -832,7 +831,7 @@ precache_hud_strings(map)
     }
 
     // mob/gins specific strings
-    if(map == "zm_prison" || map == "zm_tomb")
+    if(level.script == "zm_prison" || level.script == "zm_tomb")
     {
         foreach(p in runners)
         {
@@ -845,22 +844,17 @@ precache_hud_strings(map)
 
 game_time_string(duration)
 {
-    if(!isdefined(level.T6EE_START_TIME))
-    {
-        return "00:00.00";
-    }
-
 	total_sec = int(duration / 1000);
     time_string = "";
 
     mn = int(total_sec / 60);       //minutes
-    time_string += (mn > 9) ? int(mn) : "0" + int(mn); // minutes
+    time_string += (mn > 9) ? int(mn) : "0" + int(mn);
 
     se = int(total_sec % 60);       //seconds
-    time_string += (se > 9) ? ":" + se : ":0" + se; // seconds
+    time_string += (se > 9) ? ":" + se : ":0" + se;
 
     ce = (duration % 1000) / 10;    //centiseconds
-    time_string += (ce > 9) ? "." + int(ce) : ".0" + int(ce); // centiseconds
+    time_string += (ce > 9) ? "." + int(ce) : ".0" + int(ce);
 
 	return time_string;
 }
