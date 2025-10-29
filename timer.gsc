@@ -75,25 +75,72 @@ stats_tracking()
 {
     //permanent stats
 
-    /*
     init_stats();
-    write_stats();
     if(fs_testfile(level.T6EE_STATS_FILE))
     {
-        //read_stats();  //read cfg file if exists
+        read_stats();
     }
-    */
+    else
+    {
+        write_stats();
+    }
 
-    //session stats
     flag_wait("initial_players_connected");
-    restarts_dvar = level.script + "_" + level.players.size + "p_restarts";
-    completions_dvar = level.script + "_" + level.players.size + "p_completions";
-    set_dvar_if_unset(restarts_dvar, 0);
-    set_dvar_if_unset(completions_dvar, 0);
+    //init session stats
+    restarts_string = level.script + "_" + level.players.size + "p_restarts";
+    completions_string = level.script + "_" + level.players.size + "p_completions";
+    set_dvar_if_unset(restarts_string, 0);
+    set_dvar_if_unset(completions_string, 0);
+
+    //run starts
     flag_wait("timer_start");
-    setdvar(restarts_dvar, getdvarint(restarts_dvar) + 1);
+    level.T6EE_STATS[restarts_string] = int(level.T6EE_STATS[restarts_string]) + 1;
+    session_restarts = getdvarint(restarts_string) + 1;
+    setdvar(restarts_string, session_restarts);
+    write_stats();
+    iprintln("Restarts | Total: " + level.T6EE_STATS[restarts_string] + " Session: " + session_restarts);
+
+    //run ends
     flag_wait("timer_end");
-    setdvar(completions_dvar, getdvarint(completions_dvar) + 1);
+    setdvar(completions_string, getdvarint(completions_string) + 1);
+}
+
+
+init_stats()
+{
+    level.T6EE_STATS = [];
+    maps = array("zm_transit_", "zm_highrise_", "zm_prison_", "zm_buried_", "zm_tomb_");
+    foreach(map in maps)
+    {
+        for(i = 4; i > 0; i--) level.T6EE_STATS[map + i + "p_completions"] = 0;
+        for(i = 4; i > 0; i--) level.T6EE_STATS[map + i + "p_restarts"] = 0;
+    }
+}
+
+read_stats()
+{
+    stats_handle = fs_fopen(level.T6EE_STATS_FILE, "read");
+    stats = fs_read(stats_handle);
+    tokens = strtok(stats, "\n");
+    foreach(stat in tokens)
+    {
+        split = strtok(stat, "=");
+        println("Loaded stat: " + split[0] + " = " + split[1]);
+        level.T6EE_STATS[split[0]] = split[1];
+    }
+    fs_fclose(stats_handle);
+}
+
+write_stats()
+{
+    fs_remove(level.T6EE_STATS_FILE);
+    stats_handle = fs_fopen(level.T6EE_STATS_FILE, "write");
+    array_key = getarraykeys( level.T6EE_STATS );
+    foreach(stat in array_key)
+    {
+        fs_write(stats_handle, stat + "=" + level.T6EE_STATS[stat] + "\n" );
+    }
+    fs_fclose(stats_handle);
 }
 
 on_player_connect()
@@ -153,7 +200,7 @@ split_refresh()
         if(self.split_index < level.T6EE_SPLIT_NUM) break;
         wait 0.05;
     }
-    self.timer.color = level.T6EE_COMPLETE_COLOR;
+    if(!flag("game_over")) self.timer.color = level.T6EE_COMPLETE_COLOR;
 }
 
 handle_chat_commands()
@@ -361,7 +408,7 @@ game_over_wait()
 {
     flag_init("game_over");
     level waittill("end_game");
-    wait 1;
+    wait 0.1; // dont conflict with origins/mob coop ending
     flag_set("game_over");
 }
 
