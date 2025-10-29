@@ -95,14 +95,15 @@ stats_tracking()
     //run starts
     flag_wait("timer_start");
     level.T6EE_STATS[restarts_string] = int(level.T6EE_STATS[restarts_string]) + 1;
-    session_restarts = getdvarint(restarts_string) + 1;
-    setdvar(restarts_string, session_restarts);
+    setdvar(restarts_string, getdvarint(restarts_string) + 1);
     write_stats();
-    iprintln("Restarts | Total: " + level.T6EE_STATS[restarts_string] + " Session: " + session_restarts);
+    iprintln(level.players.size + "P\n[Restarts] Total: " + level.T6EE_STATS[restarts_string] + " Session: " + getdvarint(restarts_string) + "\n[Completions] Total: " + level.T6EE_STATS[completions_string] + " Session: " + getdvarint(completions_string));
 
     //run ends
     flag_wait("timer_end");
+    level.T6EE_STATS[completions_string] = int(level.T6EE_STATS[completions_string]) + 1;
     setdvar(completions_string, getdvarint(completions_string) + 1);
+    write_stats();
 }
 
 
@@ -901,7 +902,6 @@ precache_hud_strings()
 
     precachestring( &"ZOMBIE_CLAYMORE_HOWTO");
     precachestring( &"ZOMBIE_PLAYERZOMBIE_DOWNED");
-    precachestring( &"ZOMBIE_REVIVING_SOLO");
     precachestring( &"ZOMBIE_SUICIDING");
 
     flag_wait("initial_players_connected");
@@ -919,6 +919,10 @@ precache_hud_strings()
         tmp_strings[p.name + "ZPNTBR"] = newhudelem();
         tmp_strings[p.name + "ZPNTBR"] settext( &"ZOMBIE_PLAYER_NEEDS_TO_BE_REVIVED", p);
         tmp_strings[p.name + "ZPNTBR"].alpha = 0;
+
+        tmp_strings[p.name + "ZRS"] = newhudelem();
+        tmp_strings[p.name + "ZRS"] settext( &"ZOMBIE_REVIVING_SOLO", p);
+        tmp_strings[p.name + "ZRS"].alpha = 0;
     }
 
     // mob/gins specific strings
