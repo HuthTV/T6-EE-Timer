@@ -521,7 +521,13 @@ upgrades_bank()
     if(level.script == "zm_highrise")
     {
         self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
-        self player_rig_fridge("svu_upgraded_zm");
+        self player_rig_fridge("svu_upgraded_zm+vzoom");
+    }
+
+    if(level.script == "buried" && level.players.size == 1)
+    {
+        self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
+        self player_rig_fridge("tar21_upgraded_zm+mms");
     }
 
     flag_wait("initial_blackscreen_passed");
