@@ -9,6 +9,7 @@ main()
     setdvar("scr_allowFileIo", 1);
     level.T6EE_LIVESPLIT_FILE = "T6EE/T6EE.dat";
     level.T6EE_SETTINGS_FILE = "T6EE/T6EE.cfg";
+    level.T6EE_STATS_FILE = "T6EE/T6EE.stats";
 
     init_default_config();
     if(fs_testfile(level.T6EE_SETTINGS_FILE))
@@ -57,6 +58,7 @@ init()
     thread setup_splits_and_labels();
     thread handle_chat_commands();
     thread game_over_wait();
+    thread stats_tracking();
     timer_start_wait();
 
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
@@ -67,6 +69,31 @@ init()
         wait 0.05;
     }
     flag_set("timer_end");
+}
+
+stats_tracking()
+{
+    //permanent stats
+
+    /*
+    init_stats();
+    write_stats();
+    if(fs_testfile(level.T6EE_STATS_FILE))
+    {
+        //read_stats();  //read cfg file if exists
+    }
+    */
+
+    //session stats
+    flag_wait("initial_players_connected");
+    restarts_dvar = level.script + "_" + level.players.size + "p_restarts";
+    completions_dvar = level.script + "_" + level.players.size + "p_completions";
+    set_dvar_if_unset(restarts_dvar, 0);
+    set_dvar_if_unset(completions_dvar, 0);
+    flag_wait("timer_start");
+    setdvar(restarts_dvar, getdvarint(restarts_dvar) + 1);
+    flag_wait("timer_end");
+    setdvar(completions_dvar, getdvarint(completions_dvar) + 1);
 }
 
 on_player_connect()
@@ -110,7 +137,7 @@ process_split()
 
 split_refresh()
 {
-    while(true)
+    while(true && !flag("game_over"))
     {
         time = gettime() - level.T6EE_START_TIME;
 
