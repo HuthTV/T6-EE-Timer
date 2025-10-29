@@ -15,7 +15,7 @@ startup
         { "zm_transit", new[] { "Jetgun/Power Off", "Tower/Turbines", "Emp" } },
         { "zm_highrise", new[] { "Symbols", "Sniper", "High Maintenance" } },
         { "zm_prison", new[] { "Dryer", "Gondola 1", "Flight 1", "Gondola 2", "Flight 2", "Gondola 3", "Flight 3", "Codes", "Headphones" } },
-        { "zm_buried", new[] { "Cipher", "Time Travel", "Sharpshooter" } },
+        { "zm_buried", new[] { "Boxhit", "Cipher", "Time Travel", "Sharpshooter" } },
         { "zm_tomb", new[] { "No Man's Land", "Chests Filled", "Staff 1", "Staff 2", "Staff 3", "Staff 4", "Ascend from Darkness", "Rain Fire", "Freedom" } }
     };
 

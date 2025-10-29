@@ -503,6 +503,10 @@ wait_for_split(split)
             break;
 
         //Buried
+        case "boxhit":
+            flag_wait("chest_has_been_used");
+            break;
+
         case "cipher":
             wait_for_buildable("buried_sq_oillamp");
             break;
@@ -598,7 +602,7 @@ upgrades_bank()
         self player_rig_fridge("svu_upgraded_zm+vzoom");
     }
 
-    if(level.script == "buried" && level.players.size == 1)
+    if(level.script == "zm_buried" && level.players.size == 1)
     {
         self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
         self player_rig_fridge("tar21_upgraded_zm+mms");
@@ -736,6 +740,7 @@ setup_splits_and_labels()
     level.T6EE_LABELS["fight"] = "Showdown";
 
     // Buried
+    level.T6EE_LABELS["boxhit"] = "Boxhit";
     level.T6EE_LABELS["cipher"] = "Cipher";
     level.T6EE_LABELS["time_travel"] = "Time Travel";
     level.T6EE_LABELS["sharpshooter"] = "Sharpshooter";
@@ -756,16 +761,17 @@ setup_splits_and_labels()
     splits = [];
     splits["zm_transit"] = array("jetgun_power_off");
     splits["zm_highrise"] = strtok("highrise_symbols|highrise_perks", "|");
-    splits["zm_buried"] = strtok("cipher|time_travel|sharpshooter", "|");
 
     if(level.players.size == 1)
     {
         splits["zm_prison"] = strtok("dryer|gondola_1|plane_1|gondola_2|plane_2|gondola_3|plane_3|codes|headphones", "|");
+        splits["zm_buried"] = strtok("boxhit|cipher|time_travel|sharpshooter", "|");
         splits["zm_tomb"] = strtok("NML|boxes|staff_1|staff_2|staff_3|staff_4|AFD|rain_fire|freedom", "|");
     }
     else
     {
         splits["zm_prison"] = strtok("plane_1|plane_2|plane_3|codes|fight", "|");
+        splits["zm_buried"] = strtok("cipher|time_travel|sharpshooter", "|");
         splits["zm_tomb"] = strtok("boxes|AFD|freedom", "|");
     }
 
