@@ -56,7 +56,9 @@ update
                 if (data.Length >= 3)
                 {
                     vars.mapName = data[0];
-                    if (int.TryParse(data[1], out int parsedSplits) && int.TryParse(data[2], out int parsedTime))
+                    int parsedSplits;
+                    int parsedTime;
+                    if (int.TryParse(data[1], out parsedSplits) && int.TryParse(data[2], out parsedTime))
                     {
                         vars.splitValue = parsedSplits;
                         vars.timeValue = parsedTime;
