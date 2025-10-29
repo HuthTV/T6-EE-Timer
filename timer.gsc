@@ -97,7 +97,8 @@ stats_tracking()
     level.T6EE_STATS[restarts_string] = int(level.T6EE_STATS[restarts_string]) + 1;
     setdvar(restarts_string, getdvarint(restarts_string) + 1);
     write_stats();
-    iprintln(level.players.size + "P\n[Restarts] Total: " + level.T6EE_STATS[restarts_string] + " Session: " + getdvarint(restarts_string) + "\n[Completions] Total: " + level.T6EE_STATS[completions_string] + " Session: " + getdvarint(completions_string));
+    if(int(level.T6EE_CFG["show_stats"]))
+        iprintln("[Restarts] Total: " + level.T6EE_STATS[restarts_string] + " Session: " + getdvarint(restarts_string) + "\n[Completions] Total: " + level.T6EE_STATS[completions_string] + " Session: " + getdvarint(completions_string));
 
     //run ends
     flag_wait("timer_end");
@@ -214,6 +215,14 @@ handle_chat_commands()
 
         switch (msg)
         {
+
+            case "stats":
+                status = int(level.T6EE_CFG["show_stats"]);
+                level.T6EE_CFG["show_stats"] = !status;
+                iprintln("Display stats " + (status ? "^1disabled" : "^2enabled"));
+                write_config();
+                break;
+
             case "timer":
                 status = int(level.T6EE_CFG["hud_timer"]);
                 level.T6EE_CFG["hud_timer"] = !status;
@@ -688,6 +697,7 @@ init_default_config()
     level.T6EE_CFG["hud_timer"] = 1;
     level.T6EE_CFG["hud_speed"] = 1;
     level.T6EE_CFG["console_strafe"] = 0;
+    level.T6EE_CFG["show_stats"] = 1;
 }
 
 read_config()
