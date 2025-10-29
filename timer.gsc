@@ -507,6 +507,10 @@ wait_for_split(split)
             flag_wait("chest_has_been_used");
             break;
 
+        case "ghosts":
+            flag_wait("spawn_ghosts");
+            break;
+
         case "cipher":
             wait_for_buildable("buried_sq_oillamp");
             break;
@@ -741,6 +745,7 @@ setup_splits_and_labels()
 
     // Buried
     level.T6EE_LABELS["boxhit"] = "Boxhit";
+    level.T6EE_LABELS["ghosts"] = "Ghosts";
     level.T6EE_LABELS["cipher"] = "Cipher";
     level.T6EE_LABELS["time_travel"] = "Time Travel";
     level.T6EE_LABELS["sharpshooter"] = "Sharpshooter";
@@ -765,7 +770,7 @@ setup_splits_and_labels()
     if(level.players.size == 1)
     {
         splits["zm_prison"] = strtok("dryer|gondola_1|plane_1|gondola_2|plane_2|gondola_3|plane_3|codes|headphones", "|");
-        splits["zm_buried"] = strtok("boxhit|cipher|time_travel|sharpshooter", "|");
+        splits["zm_buried"] = strtok("boxhit|ghosts|cipher|time_travel|sharpshooter", "|");
         splits["zm_tomb"] = strtok("NML|boxes|staff_1|staff_2|staff_3|staff_4|AFD|rain_fire|freedom", "|");
     }
     else
