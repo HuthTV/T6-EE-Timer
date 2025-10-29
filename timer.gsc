@@ -7,8 +7,8 @@
 main()
 {
     setdvar("scr_allowFileIo", 1);
-    level.T6EE_LIVESPLIT_FILE = "T6EE.dat";
-    level.T6EE_SETTINGS_FILE = "T6EE.cfg";
+    level.T6EE_LIVESPLIT_FILE = "T6EE/T6EE.dat";
+    level.T6EE_SETTINGS_FILE = "T6EE/T6EE.cfg";
 
     init_default_config();
     if(fs_testfile(level.T6EE_SETTINGS_FILE))

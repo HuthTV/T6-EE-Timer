@@ -41,7 +41,7 @@ startup
     }
 
 	vars.timerString = "0|0";
-	vars.filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Plutonium", "storage", "t6", "raw", "scriptdata", "T6EE.dat");
+	vars.filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Plutonium", "storage", "t6", "raw", "scriptdata", "T6EE", "T6EE.dat");
 }
 
 update
