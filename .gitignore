@@ -1,3 +1,4 @@
 *.exe
-*.bat
+preprocessor/bin/
+preprocessor/obj/
 compiled/

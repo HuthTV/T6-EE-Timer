@@ -1,3 +1,5 @@
+#DEFINE T6EE_ACTIVE_COLOR (0.99, 0.91, 0.99)
+#DEFINE T6EE_COMPLETE_COLOR (0.99, 0.58, 0.99)
 #include maps\mp\_utility;
 #include maps\mp\zombies\_zm;
 #include maps\mp\zombies\_zm_utility;
@@ -29,12 +31,9 @@ main()
 init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
-    level.T6EE_VERSION = "V5.1";
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
     level.T6EE_SPLIT = [];
-    level.T6EE_ACTIVE_COLOR = (0.99, 0.91, 0.99);
-    level.T6EE_COMPLETE_COLOR = (0.99, 0.58, 0.99);
     level.T6EE_X_OFFSET = 2;
     level.T6EE_Y_INCREMENT = 16;
     level.T6EE_Y_OFFSET = -34;
@@ -162,7 +161,7 @@ on_player_spawned()
     self waittill("spawned_player");
     if(upgrades_active()) self thread upgrades_bank();
     wait 2.6;
-    self iprintln("^8[^1R" + getSubStr(getDvar("version"), 23, 27) +"^8]" + "^8[^3T6EE^8][^5" + level.T6EE_VERSION + "^8]^7 github.com/HuthTV/T6-EE-Timer");
+    self iprintln("^8[^1R" + getSubStr(getDvar("version"), 23, 27) +"^8]" + "^8[^3T6EE^8][^5" + VERSION + "^8]^7 github.com/HuthTV/T6-EE-Timer");
 }
 
 process_split()
@@ -202,7 +201,7 @@ split_refresh()
         if(self.split_index < level.T6EE_SPLIT_NUM) break;
         wait 0.05;
     }
-    if(!flag("game_over")) self.timer.color = level.T6EE_COMPLETE_COLOR;
+    if(!flag("game_over")) self.timer.color = T6EE_COMPLETE_COLOR;
 }
 
 handle_chat_commands()
@@ -251,7 +250,7 @@ handle_chat_commands()
                 {
                     player thread speedometer();
                 }
-                player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"))
+                player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"));
                 write_config();
                 break;
 
@@ -354,7 +353,7 @@ draw_client_split( index )
     self.fontscale = 1.4;
     self.hidewheninmenu = 0;
     self.alpha = 0.8;
-    self.color = level.T6EE_ACTIVE_COLOR;
+    self.color = T6EE_ACTIVE_COLOR;
 }
 
 timer_start_wait()
