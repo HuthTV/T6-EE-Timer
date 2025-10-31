@@ -1,4 +1,5 @@
 *.exe
+T6EE*
 preprocessor/bin/
 preprocessor/obj/
 compiled/

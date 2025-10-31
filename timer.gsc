@@ -1,5 +1,13 @@
 #DEFINE T6EE_ACTIVE_COLOR (0.99, 0.91, 0.99)
 #DEFINE T6EE_COMPLETE_COLOR (0.99, 0.58, 0.99)
+#DEFINE T6EE_TIMER_X_OFFSET 2
+#DEFINE T6EE_TIMER_Y_INCREMENT 16
+#DEFINE T6EE_LIVESPLIT_FILE "T6EE/T6EE.dat"
+#DEFINE T6EE_SETTINGS_FILE "T6EE/T6EE.cfg"
+#DEFINE T6EE_STATS_FILE "T6EE/T6EE.stats"
+#DEFINE SOLO_NETWORK_FRAME 100
+#DEFINE COOP_NETWORK_FRAME 50
+
 #include maps\mp\_utility;
 #include maps\mp\zombies\_zm;
 #include maps\mp\zombies\_zm_utility;
@@ -9,12 +17,8 @@
 main()
 {
     setdvar("scr_allowFileIo", 1);
-    level.T6EE_LIVESPLIT_FILE = "T6EE/T6EE.dat";
-    level.T6EE_SETTINGS_FILE = "T6EE/T6EE.cfg";
-    level.T6EE_STATS_FILE = "T6EE/T6EE.stats";
-
     init_default_config();
-    if(fs_testfile(level.T6EE_SETTINGS_FILE))
+    if(fs_testfile(T6EE_SETTINGS_FILE))
     {
         read_config();  //read cfg file if exists
     }
@@ -23,7 +27,7 @@ main()
         write_config(); //create default cfg file
     }
     //write empty livesplit data file
-    livesplit_handle = fs_fopen(level.T6EE_LIVESPLIT_FILE, "write");
+    livesplit_handle = fs_fopen(T6EE_LIVESPLIT_FILE, "write");
     fs_write( livesplit_handle, "zm_map|0|0" );    // map|split|time
     fs_fclose( livesplit_handle );
 }
@@ -31,15 +35,13 @@ main()
 init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
+    map_offset = [];
+    map_offset["zm_tomb"] = 76;
+    map_offset["zm_prison"] = 16;
+    level.T6EE_Y_OFFSET = isdefined(MAP_OFFSET[level.script]) ? MAP_OFFSET[level.script] : -34;
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
     level.T6EE_SPLIT = [];
-    level.T6EE_X_OFFSET = 2;
-    level.T6EE_Y_INCREMENT = 16;
-    level.T6EE_Y_OFFSET = -34;
-    level.T6EE_Y_MAP_OFFSET["zm_prison"] = 16;
-    level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
-    if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
     flag_init("timer_end");
     flag_init("timer_start");
 
@@ -48,7 +50,6 @@ init()
         thread overflow_manager();
         thread precache_hud_strings();
     }
-
     thread on_player_connect();
     thread verify_network_frame();
     thread run_anticheat();
@@ -75,7 +76,7 @@ stats_tracking()
     //permanent stats
 
     init_stats();
-    if(fs_testfile(level.T6EE_STATS_FILE))
+    if(fs_testfile(T6EE_STATS_FILE))
     {
         read_stats();
     }
@@ -120,7 +121,7 @@ init_stats()
 
 read_stats()
 {
-    stats_handle = fs_fopen(level.T6EE_STATS_FILE, "read");
+    stats_handle = fs_fopen(T6EE_STATS_FILE, "read");
     stats = fs_read(stats_handle);
     tokens = strtok(stats, "\n");
     foreach(stat in tokens)
@@ -134,8 +135,8 @@ read_stats()
 
 write_stats()
 {
-    fs_remove(level.T6EE_STATS_FILE);
-    stats_handle = fs_fopen(level.T6EE_STATS_FILE, "write");
+    fs_remove(T6EE_STATS_FILE);
+    stats_handle = fs_fopen(T6EE_STATS_FILE, "write");
     array_key = getarraykeys( level.T6EE_STATS );
     foreach(stat in array_key)
     {
@@ -348,8 +349,8 @@ draw_client_split( index )
     self.aligny = "center";
     self.horzalign = "user_left"; // user_left respects aspect ratio
     self.vertalign = "top";
-    self.x = level.T6EE_X_OFFSET;
-    self.y = level.T6EE_Y_OFFSET + (index * level.T6EE_Y_INCREMENT);
+    self.x = T6EE_TIMER_X_OFFSET;
+    self.y = level.T6EE_Y_OFFSET + (index * T6EE_TIMER_Y_INCREMENT);
     self.fontscale = 1.4;
     self.hidewheninmenu = 0;
     self.alpha = 0.8;
@@ -423,7 +424,7 @@ game_over_wait()
 
 write_livesplit_data( time )
 {
-        livesplit_handle = fs_fopen(level.T6EE_LIVESPLIT_FILE, "write");
+        livesplit_handle = fs_fopen(T6EE_LIVESPLIT_FILE, "write");
         livesplit_data = level.script + "|" + level.T6EE_SPLIT_NUM + "|" + (time);
         fs_write( livesplit_handle, livesplit_data );
         fs_fclose( livesplit_handle );
@@ -680,13 +681,10 @@ verify_network_frame()
 incorrect_network_frame()
 {
     solo = level.players.size == 1;
-    COOP_DELAY = 50;
-    SOLO_DELAY = 100;
-
     start = gettime();
     wait_network_frame();
     delay = gettime() - start;
-    return (solo && delay != SOLO_DELAY) || (!solo && delay != COOP_DELAY);
+    return (solo && delay != SOLO_NETWORK_FRAME) || (!solo && delay != COOP_NETWORK_FRAME);
 }
 
 init_default_config()
@@ -701,7 +699,7 @@ init_default_config()
 
 read_config()
 {
-    config_handle = fs_fopen(level.T6EE_SETTINGS_FILE, "read");
+    config_handle = fs_fopen(T6EE_SETTINGS_FILE, "read");
     settings = fs_read(config_handle);
     tokens = strtok(settings, "\n");
     foreach(setting in tokens)
@@ -715,8 +713,8 @@ read_config()
 
 write_config()
 {
-    fs_remove(level.T6EE_SETTINGS_FILE);
-    config_handle = fs_fopen(level.T6EE_SETTINGS_FILE, "write");
+    fs_remove(T6EE_SETTINGS_FILE);
+    config_handle = fs_fopen(T6EE_SETTINGS_FILE, "write");
     array_key = getarraykeys( level.T6EE_CFG );
     foreach(setting in array_key)
     {
