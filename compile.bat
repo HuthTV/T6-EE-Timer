@@ -4,7 +4,6 @@ setlocal enabledelayedexpansion
 rem ===== ARGUMENT CHECK =====
 if "%~1"=="" (
     echo Usage: build_timer.bat ^<versiontag^>
-    echo Example: build_timer.bat V22
     exit /b 1
 )
 

@@ -1,10 +1,14 @@
 #DEFINE T6EE_ACTIVE_COLOR (0.99, 0.91, 0.99)
 #DEFINE T6EE_COMPLETE_COLOR (0.99, 0.58, 0.99)
 #DEFINE T6EE_TIMER_X_OFFSET 2
+#DEFINE T6EE_TIMER_Y_OFFSET_TOMB 76
+#DEFINE T6EE_TIMER_Y_OFFSET_MOB 16
+#DEFINE T6EE_TIMER_Y_OFFSET_ALL -34
 #DEFINE T6EE_TIMER_Y_INCREMENT 16
 #DEFINE T6EE_LIVESPLIT_FILE "T6EE/T6EE.dat"
 #DEFINE T6EE_SETTINGS_FILE "T6EE/T6EE.cfg"
 #DEFINE T6EE_STATS_FILE "T6EE/T6EE.stats"
+#DEFINE DOWNLOAD_SITE github.com/HuthTV/T6-EE-Timer
 #DEFINE SOLO_NETWORK_FRAME 100
 #DEFINE COOP_NETWORK_FRAME 50
 
@@ -26,22 +30,21 @@ main()
     {
         write_config(); //create default cfg file
     }
-    //write empty livesplit data file
-    livesplit_handle = fs_fopen(T6EE_LIVESPLIT_FILE, "write");
-    fs_write( livesplit_handle, "zm_map|0|0" );    // map|split|time
-    fs_fclose( livesplit_handle );
 }
 
 init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
-    map_offset = [];
-    map_offset["zm_tomb"] = 76;
-    map_offset["zm_prison"] = 16;
-    level.T6EE_Y_OFFSET = isdefined(MAP_OFFSET[level.script]) ? MAP_OFFSET[level.script] : -34;
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
+    level.T6EE_SUPER = int(level.T6EE_CFG["super_ee"]);
     level.T6EE_SPLIT_NUM = 0;
     level.T6EE_SPLIT = [];
+    level.T6EE_Y_OFFSET = isdefined(offset[level.script]) ? offset[level.script] : T6EE_TIMER_Y_OFFSET_ALL;
+    offset = [];
+    offset["zm_tomb"] = T6EE_TIMER_Y_OFFSET_TOMB;
+    offset["zm_prison"] = T6EE_TIMER_Y_OFFSET_MOB;
+
+    thread check_for_super();
     flag_init("timer_end");
     flag_init("timer_start");
 
@@ -119,6 +122,39 @@ init_stats()
     }
 }
 
+check_for_super()
+{
+    //carry over time only on die rise and buried
+    valid_super = level.T6EE_SUPER && fs_testfile(T6EE_LIVESPLIT_FILE) && (level.script == "zm_buried" || level.script == "zm_highrise");
+    if(valid_super)
+    {
+        livesplit_handle = fs_fopen(T6EE_LIVESPLIT_FILE, "read");
+    }
+    else
+    {
+        livesplit_handle = fs_fopen(T6EE_LIVESPLIT_FILE, "write");
+    }
+
+    while(isdefined(level.introscreen.alpha) && level.introscreen.alpha != 0) wait 0.05; //1.6 sec before blackscreen
+
+    if(valid_super)
+    {
+        //retain time from previous maps
+        tokens = strtok(fs_read(livesplit_handle), "|");
+        level.T6EE_SUPER_TIME_OFFSET = int(tokens[2]);
+        iprintln("Super EE time enabled");
+    }
+    else
+    {
+        //write empty livesplit data file
+        fs_write( livesplit_handle, "zm_map|0|0");
+        level.T6EE_SUPER_TIME_OFFSET = 0;
+    }
+    fs_fclose( livesplit_handle );
+
+
+}
+
 read_stats()
 {
     stats_handle = fs_fopen(T6EE_STATS_FILE, "read");
@@ -162,7 +198,7 @@ on_player_spawned()
     self waittill("spawned_player");
     if(upgrades_active()) self thread upgrades_bank();
     wait 2.6;
-    self iprintln("^8[^1R" + getSubStr(getDvar("version"), 23, 27) +"^8]" + "^8[^3T6EE^8][^5" + VERSION + "^8]^7 github.com/HuthTV/T6-EE-Timer");
+    self iprintln("^8[^1R" + getSubStr(getDvar("version"), 23, 27) +"^8]" + "^8[^3T6EE^8][^5" + "VERSION" + "^8]^7 DOWNLOAD_SITE");
 }
 
 process_split()
@@ -197,7 +233,7 @@ split_refresh()
             self.timer set_safe_text(frame_string);
         }
 
-        write_livesplit_data(time);
+        write_livesplit_data(time + level.T6EE_SUPER_TIME_OFFSET);
 
         if(self.split_index < level.T6EE_SPLIT_NUM) break;
         wait 0.05;
@@ -217,30 +253,23 @@ handle_chat_commands()
         {
 
             case "stats":
-                status = int(level.T6EE_CFG["show_stats"]);
-                level.T6EE_CFG["show_stats"] = !status;
-                iprintln("Display stats " + (status ? "^1disabled" : "^2enabled"));
-                write_config();
+                status = toggle_cfg("show_stats");
+                iprintln("Display stats " + (status ? "^2enabled" : "^1disabled"));
                 break;
 
             case "timer":
-                status = int(level.T6EE_CFG["hud_timer"]);
-                level.T6EE_CFG["hud_timer"] = !status;
-                iprintln("HUD Timer " + (status ? "^1disabled" : "^2enabled") + "^7 - use ^3fast_restart");
-                write_config();
+                status = toggle_cfg("hud_timer");
+                iprintln("HUD Timer " + (status ? "^2enabled" : "^1disabled") + "^7 - use ^3fast_restart");
                 break;
 
             case "strafe":
-                status = int(level.T6EE_CFG["console_strafe"]);
+                status = toggle_cfg("console_strafe");
                 set_strafe_speed(!status);
-                level.T6EE_CFG["console_strafe"] = !status;
                 iprintln("Strafe speeds - " + (status ? "^2PC" : "^1Console"));
-                write_config();
                 break;
 
             case "speed":
-                status = int(level.T6EE_CFG["hud_speed"]);
-                level.T6EE_CFG["hud_speed"] = !status;
+                if(player ishost()) toggle_cfg("hud_speed");
                 speed_active = isdefined(player.speedometer);
                 if(speed_active)
                 {
@@ -251,8 +280,12 @@ handle_chat_commands()
                 {
                     player thread speedometer();
                 }
-                player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"));
-                write_config();
+                player iprintln("Speedometer - " + (speed_active ? "^2enabled" : "^1disabled"));
+                break;
+
+            case "super":
+                status = toggle_cfg("super_ee");
+                iprintln("Super EE timer " + (status ? "^2enabled" : "^1disabled"));
                 break;
 
             case "restore":
@@ -275,6 +308,14 @@ handle_chat_commands()
                 break;
         }
     }
+}
+
+toggle_cfg(key)
+{
+    newval = !int(level.T6EE_CFG[key]);
+    level.T6EE_CFG[key] = newval;
+    write_config();
+    return newval;
 }
 
 set_speedometer_color()
@@ -695,6 +736,7 @@ init_default_config()
     level.T6EE_CFG["hud_speed"] = 1;
     level.T6EE_CFG["console_strafe"] = 0;
     level.T6EE_CFG["show_stats"] = 1;
+    level.T6EE_CFG["super_ee"] = 0;
 }
 
 read_config()

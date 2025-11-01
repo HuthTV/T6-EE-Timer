@@ -17,7 +17,7 @@ class GscPreprocessor
 
         string inputPath = args[0];
         string outputPath = args[1];
-        string versionValue = null;
+        string? versionValue = null;
 
         // ===== PARSE VERSION =====
         foreach (var arg in args)
