@@ -4,7 +4,7 @@ Timer for speedrunning all Black Ops II Easter Eggs. Features automatic start, s
 ## 📥 Installation
 Download the latest release from the link below and place the `T6EE.gsc` file in your Plutonium scripts folder: 
 <pre>C:\Users\%username%\AppData\Local\Plutonium\storage\t6\scripts\zm</pre>
-### **Latest T6EE release 5.1 ➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.1/T6EE_5.1.gsc)**
+### **Latest T6EE release 5.1b ➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.1b/T6EE_5.1b.gsc)**
 
 ## ⏱️ LiveSplit Setup
 To connect LiveSplit with the timer, you must install an autosplitter script (asl file) in your layout. You can find it here **➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.1/T6EE_5.1.asl)**  
