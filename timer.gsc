@@ -58,7 +58,7 @@ init()
     thread setup_splits_and_labels();
     thread handle_chat_commands();
     thread game_over_wait();
-    thread stats_tracking();
+    if(level.T6EE_CFG["show_stats"]) thread stats_tracking();
     timer_start_wait();
 
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
@@ -251,7 +251,7 @@ handle_chat_commands()
                 {
                     player thread speedometer();
                 }
-                player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"))
+                player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"));
                 write_config();
                 break;
 
@@ -697,7 +697,7 @@ init_default_config()
     level.T6EE_CFG["hud_timer"] = 1;
     level.T6EE_CFG["hud_speed"] = 1;
     level.T6EE_CFG["console_strafe"] = 0;
-    level.T6EE_CFG["show_stats"] = 1;
+    level.T6EE_CFG["show_stats"] = 0;
 }
 
 read_config()
