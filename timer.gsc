@@ -1,3 +1,15 @@
+#define VERSION "V5.1"
+#define CFG_FILE "T6EE/T6EE.cfg"
+#define TIMER_FILE "T6EE/T6EE.dat"
+#define STATS_FILE "T6EE/T6EE.stats"
+#define GIT_LINK "github.com/HuthTV/T6-EE-Timer"
+#define SOLO_NETWORK_FRAME 100
+#define COOP_NETWORK_FRAME 100
+#define TIMER_Y_INCREMENT 16
+#define TIMER_X_OFFSET 2
+#define TIMER_ACTIVE_COLOR (0.99, 0.91, 0.99)
+#define TIMER_COMPLETE_COLOR (0.99, 0.58, 0.99)
+
 #include maps\mp\_utility;
 #include maps\mp\zombies\_zm;
 #include maps\mp\zombies\_zm_utility;
@@ -7,12 +19,9 @@
 main()
 {
     setdvar("scr_allowFileIo", 1);
-    level.T6EE_LIVESPLIT_FILE = "T6EE/T6EE.dat";
-    level.T6EE_SETTINGS_FILE = "T6EE/T6EE.cfg";
-    level.T6EE_STATS_FILE = "T6EE/T6EE.stats";
 
     init_default_config();
-    if(fs_testfile(level.T6EE_SETTINGS_FILE))
+    if(fs_testfile(CFG_FILE))
     {
         read_config();  //read cfg file if exists
     }
@@ -21,7 +30,7 @@ main()
         write_config(); //create default cfg file
     }
     //write empty livesplit data file
-    livesplit_handle = fs_fopen(level.T6EE_LIVESPLIT_FILE, "write");
+    livesplit_handle = fs_fopen(TIMER_FILE, "write");
     fs_write( livesplit_handle, "zm_map|0|0" );    // map|split|time
     fs_fclose( livesplit_handle );
 }
@@ -29,17 +38,12 @@ main()
 init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
-    level.T6EE_VERSION = "V5.1";
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
-    level.T6EE_SPLIT = [];
-    level.T6EE_ACTIVE_COLOR = (0.99, 0.91, 0.99);
-    level.T6EE_COMPLETE_COLOR = (0.99, 0.58, 0.99);
-    level.T6EE_X_OFFSET = 2;
-    level.T6EE_Y_INCREMENT = 16;
     level.T6EE_Y_OFFSET = -34;
     level.T6EE_Y_MAP_OFFSET["zm_prison"] = 16;
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
+
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
     flag_init("timer_end");
     flag_init("timer_start");
@@ -61,6 +65,7 @@ init()
     thread stats_tracking();
     timer_start_wait();
 
+    level.T6EE_SPLIT = [];
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
     {
         level.T6EE_SPLIT[split] = spawnstruct();
@@ -76,7 +81,7 @@ stats_tracking()
     //permanent stats
 
     init_stats();
-    if(fs_testfile(level.T6EE_STATS_FILE))
+    if(fs_testfile(STATS_FILE))
     {
         read_stats();
     }
@@ -121,7 +126,7 @@ init_stats()
 
 read_stats()
 {
-    stats_handle = fs_fopen(level.T6EE_STATS_FILE, "read");
+    stats_handle = fs_fopen(STATS_FILE, "read");
     stats = fs_read(stats_handle);
     tokens = strtok(stats, "\n");
     foreach(stat in tokens)
@@ -135,8 +140,8 @@ read_stats()
 
 write_stats()
 {
-    fs_remove(level.T6EE_STATS_FILE);
-    stats_handle = fs_fopen(level.T6EE_STATS_FILE, "write");
+    fs_remove(STATS_FILE);
+    stats_handle = fs_fopen(STATS_FILE, "write");
     array_key = getarraykeys( level.T6EE_STATS );
     foreach(stat in array_key)
     {
@@ -162,7 +167,7 @@ on_player_spawned()
     self waittill("spawned_player");
     if(upgrades_active()) self thread upgrades_bank();
     wait 2.6;
-    self iprintln("^8[^1R" + getSubStr(getDvar("version"), 23, 27) +"^8]" + "^8[^3T6EE^8][^5" + level.T6EE_VERSION + "^8]^7 github.com/HuthTV/T6-EE-Timer");
+    self iprintln("^8[^1" + toupper(getDvar("shortversion")) +"^8][^3T6EE^8][^5" + VERSION + "^8]^7 " + GIT_LINK);
 }
 
 process_split()
@@ -202,7 +207,7 @@ split_refresh()
         if(self.split_index < level.T6EE_SPLIT_NUM) break;
         wait 0.05;
     }
-    if(!flag("game_over")) self.timer.color = level.T6EE_COMPLETE_COLOR;
+    if(!flag("game_over")) self.timer.color = TIMER_COMPLETE_COLOR;
 }
 
 handle_chat_commands()
@@ -251,7 +256,7 @@ handle_chat_commands()
                 {
                     player thread speedometer();
                 }
-                player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"))
+                player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"));
                 write_config();
                 break;
 
@@ -349,12 +354,12 @@ draw_client_split( index )
     self.aligny = "center";
     self.horzalign = "user_left"; // user_left respects aspect ratio
     self.vertalign = "top";
-    self.x = level.T6EE_X_OFFSET;
-    self.y = level.T6EE_Y_OFFSET + (index * level.T6EE_Y_INCREMENT);
+    self.x = TIMER_X_OFFSET;
+    self.y = level.T6EE_Y_OFFSET + (index * TIMER_Y_INCREMENT);
     self.fontscale = 1.4;
     self.hidewheninmenu = 0;
     self.alpha = 0.8;
-    self.color = level.T6EE_ACTIVE_COLOR;
+    self.color = TIMER_ACTIVE_COLOR;
 }
 
 timer_start_wait()
@@ -424,7 +429,7 @@ game_over_wait()
 
 write_livesplit_data( time )
 {
-        livesplit_handle = fs_fopen(level.T6EE_LIVESPLIT_FILE, "write");
+        livesplit_handle = fs_fopen(TIMER_FILE, "write");
         livesplit_data = level.script + "|" + level.T6EE_SPLIT_NUM + "|" + (time);
         fs_write( livesplit_handle, livesplit_data );
         fs_fclose( livesplit_handle );
@@ -681,13 +686,10 @@ verify_network_frame()
 incorrect_network_frame()
 {
     solo = level.players.size == 1;
-    COOP_DELAY = 50;
-    SOLO_DELAY = 100;
-
     start = gettime();
     wait_network_frame();
     delay = gettime() - start;
-    return (solo && delay != SOLO_DELAY) || (!solo && delay != COOP_DELAY);
+    return (solo && delay != SOLO_NETWORK_FRAME) || (!solo && delay != COOP_NETWORK_FRAME);
 }
 
 init_default_config()
@@ -702,7 +704,7 @@ init_default_config()
 
 read_config()
 {
-    config_handle = fs_fopen(level.T6EE_SETTINGS_FILE, "read");
+    config_handle = fs_fopen(CFG_FILE, "read");
     settings = fs_read(config_handle);
     tokens = strtok(settings, "\n");
     foreach(setting in tokens)
@@ -716,8 +718,8 @@ read_config()
 
 write_config()
 {
-    fs_remove(level.T6EE_SETTINGS_FILE);
-    config_handle = fs_fopen(level.T6EE_SETTINGS_FILE, "write");
+    fs_remove(CFG_FILE);
+    config_handle = fs_fopen(CFG_FILE, "write");
     array_key = getarraykeys( level.T6EE_CFG );
     foreach(setting in array_key)
     {
