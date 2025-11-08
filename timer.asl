@@ -5,8 +5,8 @@ state("plutonium-bootstrapper-win32")
 startup
 {
 	refreshRate = 40;
-
 	vars.mapName = "zm_map";
+    vars.split = 0;
 	vars.splitValue = 0;
 	vars.timeValue = 0;
 
@@ -40,26 +40,32 @@ startup
         }
     }
 
-	vars.timerString = "0|0";
 	vars.filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Plutonium", "storage", "t6", "raw", "scriptdata", "T6EE", "T6EE.dat");
 }
 
 update
 {
-    try
     {
         if(File.Exists(vars.filePath))
         {
             using (StreamReader r = new StreamReader(new FileStream(vars.filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
             {
+                int parsedSplits;
+                int parsedTime;
                 string[] data = r.ReadToEnd().Split('|');
                 if (data.Length >= 3)
                 {
-                    vars.mapName = data[0];
-                    if (int.TryParse(data[1], out int parsedSplits) && int.TryParse(data[2], out int parsedTime))
+                    string newMapName = data[0];
+                    if (int.TryParse(data[1], out parsedSplits) && int.TryParse(data[2], out parsedTime))
                     {
+                        if(vars.mapName != newMapName)
+                        {
+                            vars.split = 0;
+                        }
+
                         vars.splitValue = parsedSplits;
                         vars.timeValue = parsedTime;
+                        vars.mapName = newMapName;
                     }
                 }
             }

@@ -1,4 +1,4 @@
-#define VERSION "V5.1"
+#define VERSION "V5.2"
 #define CFG_FILE "T6EE/T6EE.cfg"
 #define TIMER_FILE "T6EE/T6EE.dat"
 #define STATS_FILE "T6EE/T6EE.stats"
@@ -30,9 +30,6 @@ main()
         write_config(); //create default cfg file
     }
     //write empty livesplit data file
-    livesplit_handle = fs_fopen(TIMER_FILE, "write");
-    fs_write( livesplit_handle, "zm_map|0|0" );    // map|split|time
-    fs_fclose( livesplit_handle );
 }
 
 init()
@@ -43,6 +40,8 @@ init()
     level.T6EE_Y_OFFSET = -34;
     level.T6EE_Y_MAP_OFFSET["zm_prison"] = 16;
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
+    level.T6EE_STATS_ACTIVE = int(level.T6EE_CFG["show_stats"]);
+    level.T6EE_SUPER_TIMING = int(level.T6EE_CFG["super_timing"]);
 
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
     flag_init("timer_end");
@@ -54,6 +53,7 @@ init()
         thread precache_hud_strings();
     }
 
+    thread setup_start_data();
     thread on_player_connect();
     thread verify_network_frame();
     thread run_anticheat();
@@ -62,10 +62,11 @@ init()
     thread setup_splits_and_labels();
     thread handle_chat_commands();
     thread game_over_wait();
-    thread stats_tracking();
+    if(level.T6EE_STATS_ACTIVE) thread stats_tracking();
     timer_start_wait();
 
     level.T6EE_SPLIT = [];
+    if(level.T6EE_SUPER_TIMING)
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
     {
         level.T6EE_SPLIT[split] = spawnstruct();
@@ -74,6 +75,33 @@ init()
         wait 0.05;
     }
     flag_set("timer_end");
+}
+
+setup_start_data()
+{
+    level.timing_offset = 0;
+    flag_wait("initial_players_connected");
+    if(maps\mp\zombies\_zm_pers_upgrades::is_pers_system_active() && level.T6EE_SUPER_TIMING)
+    {
+        iprintln("Super EE timing ^2enabled");
+    }
+
+    if(level.T6EE_SUPER_TIMING && (level.script == "zm_highrise" || level.script == "zm_buried") && fs_testfile(TIMER_FILE))
+    {
+        //super timing, don't reset time
+        livesplit_handle = fs_fopen(TIMER_FILE, "read");
+        time = fs_read(livesplit_handle);
+        data = strtok(time, "|");
+        level.timing_offset = int(data[2]);
+        fs_fclose( livesplit_handle );
+    }
+    else
+    {
+        //regular timing
+        livesplit_handle = fs_fopen(TIMER_FILE, "write");
+        fs_write( livesplit_handle, "zm_map|0|0" );    // map|split|time
+        fs_fclose( livesplit_handle );
+    }
 }
 
 stats_tracking()
@@ -102,8 +130,7 @@ stats_tracking()
     level.T6EE_STATS[restarts_string] = int(level.T6EE_STATS[restarts_string]) + 1;
     setdvar(restarts_string, getdvarint(restarts_string) + 1);
     write_stats();
-    if(int(level.T6EE_CFG["show_stats"]))
-        iprintln("[Restarts] Total: " + level.T6EE_STATS[restarts_string] + " Session: " + getdvarint(restarts_string) + "\n[Completions] Total: " + level.T6EE_STATS[completions_string] + " Session: " + getdvarint(completions_string));
+    iprintln("[Restarts] Total: " + level.T6EE_STATS[restarts_string] + " Session: " + getdvarint(restarts_string) + "\n[Completions] Total: " + level.T6EE_STATS[completions_string] + " Session: " + getdvarint(completions_string));
 
     //run ends
     flag_wait("timer_end");
@@ -206,7 +233,7 @@ split_refresh()
             self.timer set_safe_text(frame_string);
         }
 
-        write_livesplit_data(time);
+        write_livesplit_data(time + level.timing_offset);
 
         if(self.split_index < level.T6EE_SPLIT_NUM) break;
         wait 0.05;
@@ -225,31 +252,29 @@ handle_chat_commands()
         switch (msg)
         {
 
+            case "super":
+                status = toggle_setting("super_timing");
+                iprintln("Super timing " + (status ? "^2enabled" : "^1disabled"));
+                break;
+
             case "stats":
-                status = int(level.T6EE_CFG["show_stats"]);
-                level.T6EE_CFG["show_stats"] = !status;
+                status = toggle_setting("show_stats");
                 iprintln("Display stats " + (status ? "^1disabled" : "^2enabled"));
-                write_config();
                 break;
 
             case "timer":
-                status = int(level.T6EE_CFG["hud_timer"]);
-                level.T6EE_CFG["hud_timer"] = !status;
+                status = toggle_setting("hud_timer");
                 iprintln("HUD Timer " + (status ? "^1disabled" : "^2enabled") + "^7 - use ^3fast_restart");
-                write_config();
                 break;
 
             case "strafe":
-                status = int(level.T6EE_CFG["console_strafe"]);
-                set_strafe_speed(!status);
-                level.T6EE_CFG["console_strafe"] = !status;
-                iprintln("Strafe speeds - " + (status ? "^2PC" : "^1Console"));
-                write_config();
+                status = toggle_setting("console_strafe");
+                set_strafe_speed(status);
+                iprintln("Strafe speeds - " + (status ? "^1Console" : "^2PC"));
                 break;
 
             case "speed":
-                status = int(level.T6EE_CFG["hud_speed"]);
-                level.T6EE_CFG["hud_speed"] = !status;
+                status = toggle_setting("hud_speed");
                 speed_active = isdefined(player.speedometer);
                 if(speed_active)
                 {
@@ -261,7 +286,6 @@ handle_chat_commands()
                     player thread speedometer();
                 }
                 player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"));
-                write_config();
                 break;
 
             case "restore":
@@ -284,6 +308,15 @@ handle_chat_commands()
                 break;
         }
     }
+}
+
+toggle_setting(key)
+{
+    status = int(level.T6EE_CFG[key]);
+    new = !status;
+    level.T6EE_CFG[key] = new;
+    write_config();
+    return new;
 }
 
 set_speedometer_color()
@@ -434,7 +467,7 @@ game_over_wait()
 write_livesplit_data( time )
 {
         livesplit_handle = fs_fopen(TIMER_FILE, "write");
-        livesplit_data = level.script + "|" + level.T6EE_SPLIT_NUM + "|" + (time);
+        livesplit_data = level.script + "|" + level.T6EE_SPLIT_NUM + "|" + time;
         fs_write( livesplit_handle, livesplit_data );
         fs_fclose( livesplit_handle );
 }
@@ -704,6 +737,7 @@ init_default_config()
     level.T6EE_CFG["hud_speed"] = 1;
     level.T6EE_CFG["console_strafe"] = 0;
     level.T6EE_CFG["show_stats"] = 1;
+    level.T6EE_CFG["super_timing"] = 0;
 }
 
 read_config()
