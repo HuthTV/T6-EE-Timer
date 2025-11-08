@@ -142,11 +142,15 @@ write_stats()
 {
     fs_remove(STATS_FILE);
     stats_handle = fs_fopen(STATS_FILE, "write");
-    array_key = getarraykeys( level.T6EE_STATS );
+
+    data = "";
+    array_key = getarraykeys(level.T6EE_STATS);
     foreach(stat in array_key)
     {
-        fs_write(stats_handle, stat + "=" + level.T6EE_STATS[stat] + "\n" );
+        data += stat + "=" + level.T6EE_STATS[stat] + "\n";
     }
+
+    fs_write(stats_handle, data);
     fs_fclose(stats_handle);
 }
 
