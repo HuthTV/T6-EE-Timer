@@ -5,6 +5,7 @@
 #define GIT_LINK "github.com/HuthTV/T6-EE-Timer"
 #define SOLO_NETWORK_FRAME 100
 #define COOP_NETWORK_FRAME 100
+#define SUPER_Y_INCREMENT 305
 #define TIMER_Y_INCREMENT 16
 #define TIMER_X_OFFSET 2
 #define TIMER_ACTIVE_COLOR (0.99, 0.91, 0.99)
@@ -37,7 +38,7 @@ init()
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
-    level.T6EE_Y_OFFSET = -34;
+    level.T6EE_Y_OFFSET = -25;
     level.T6EE_Y_MAP_OFFSET["zm_prison"] = 16;
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
     level.T6EE_STATS_ACTIVE = int(level.T6EE_CFG["show_stats"]);
@@ -66,7 +67,11 @@ init()
     timer_start_wait();
 
     level.T6EE_SPLIT = [];
-    if(level.T6EE_SUPER_TIMING)
+    if((level.T6EE_HUD) && level.non_first_super_map)
+    {
+        level.T6EE_SUPER_HUD = newhudelem();
+        level.T6EE_SUPER_HUD thread super_timer();
+    }
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
     {
         level.T6EE_SPLIT[split] = spawnstruct();
@@ -77,6 +82,33 @@ init()
     flag_set("timer_end");
 }
 
+super_timer()
+{
+    self.sort = 2000;
+    self.alignx = "left";
+    self.aligny = "center";
+    self.horzalign = "user_left"; // user_left respects aspect ratio
+    self.vertalign = "top";
+    self.x = TIMER_X_OFFSET;
+    self.y = SUPER_Y_INCREMENT;
+    self.fontscale = 1.4;
+    self.hidewheninmenu = 0;
+    self.alpha = 0.8;
+    self.color = TIMER_ACTIVE_COLOR;
+
+    flag_wait("timer_start");
+    while(!flag("game_over"))
+    {
+        time = level.timing_offset + gettime() - level.T6EE_START_TIME;
+        frame_string = "^3Total ^7" + game_time_string(time);
+        self.split_string = frame_string;
+        self set_safe_text(frame_string);
+        wait 0.05;
+    }
+    flag_wait("timer_end");
+    if(level.script == "zm_buried") self.color = TIMER_COMPLETE_COLOR;
+}
+
 setup_start_data()
 {
     level.timing_offset = 0;
@@ -85,8 +117,8 @@ setup_start_data()
     {
         iprintln("Super EE timing ^2enabled");
     }
-
-    if(level.T6EE_SUPER_TIMING && (level.script == "zm_highrise" || level.script == "zm_buried") && fs_testfile(TIMER_FILE))
+    level.non_first_super_map = level.T6EE_SUPER_TIMING && (level.script == "zm_highrise" || level.script == "zm_buried") && fs_testfile(TIMER_FILE);
+    if(level.non_first_super_map)
     {
         //super timing, don't reset time
         livesplit_handle = fs_fopen(TIMER_FILE, "read");
@@ -222,7 +254,7 @@ process_split()
 
 split_refresh()
 {
-    while(true && !flag("game_over"))
+    while(!flag("game_over"))
     {
         time = gettime() - level.T6EE_START_TIME;
 
@@ -859,19 +891,24 @@ overflow_manager()
 
     while(true)
     {
-            level waittill("textset");
+        level waittill("textset");
 
-            if(level.string_count >= max_string_count)
+        if(level.string_count >= max_string_count)
+        {
+            level.overflow ClearAllTextAfterHudElem();
+            level.string_count = 0;
+
+            foreach(elem in level.T6EE_SPLIT)
             {
-                level.overflow ClearAllTextAfterHudElem();
-                level.string_count = 0;
-
-                foreach(elem in level.T6EE_SPLIT)
-                {
-                    if(isdefined(elem.timer))
-                        elem.timer set_safe_text(elem.split_string);
-                }
+                if(isdefined(elem.timer))
+                    elem.timer set_safe_text(elem.split_string);
             }
+
+            if(isdefined(level.T6EE_SUPER_HUD))
+            {
+                level.T6EE_SUPER_HUD set_safe_text(level.T6EE_SUPER_HUD.split_string);
+            }
+        }
     }
 }
 

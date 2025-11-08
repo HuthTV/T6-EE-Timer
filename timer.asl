@@ -45,6 +45,7 @@ startup
 
 update
 {
+    try
     {
         if(File.Exists(vars.filePath))
         {
@@ -55,22 +56,25 @@ update
                 string[] data = r.ReadToEnd().Split('|');
                 if (data.Length >= 3)
                 {
-                    string newMapName = data[0];
+                    vars.mapName = data[0];
                     if (int.TryParse(data[1], out parsedSplits) && int.TryParse(data[2], out parsedTime))
                     {
+                        /*
                         if(vars.mapName != newMapName)
                         {
                             vars.split = 0;
                         }
-
+                        vars.mapName = newMapName;
+                        */
                         vars.splitValue = parsedSplits;
                         vars.timeValue = parsedTime;
-                        vars.mapName = newMapName;
+
                     }
                 }
             }
         }
-    } catch (Exception) {}
+    }
+    catch (Exception) {}
 }
 
 gameTime
