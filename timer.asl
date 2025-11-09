@@ -1,6 +1,4 @@
-state("plutonium-bootstrapper-win32")
-{
-}
+state("plutonium-bootstrapper-win32"){}
 
 startup
 {
@@ -9,14 +7,24 @@ startup
     vars.split = 0;
 	vars.splitValue = 0;
 	vars.timeValue = 0;
+    vars.solo = 1;
 
-    vars.map_splits = new Dictionary<string, string[]>
+    vars.solo_map_splits = new Dictionary<string, string[]>
     {
         { "zm_transit", new[] { "Jetgun/Power Off", "Tower/Turbines", "Emp" } },
-        { "zm_highrise", new[] { "Symbols", "Sniper", "High Maintenance" } },
+        { "zm_highrise", new[] { "Symbols", "High Maintenance" } },
         { "zm_prison", new[] { "Dryer", "Gondola 1", "Flight 1", "Gondola 2", "Flight 2", "Gondola 3", "Flight 3", "Codes", "Headphones" } },
         { "zm_buried", new[] { "Boxhit", "Ghosts", "Cipher", "Time Travel", "Sharpshooter" } },
         { "zm_tomb", new[] { "No Man's Land", "Chests Filled", "Staff 1", "Staff 2", "Staff 3", "Staff 4", "Ascend from Darkness", "Rain Fire", "Freedom" } }
+    };
+
+    vars.coop_map_splits = new Dictionary<string, string[]>
+    {
+        { "zm_transit", new[] { "Jetgun/Power Off", "Tower/Turbines", "Emp" } },
+        { "zm_highrise", new[] { "Symbols", "High Maintenance" } },
+        { "zm_prison", new[] { "Flight 1", "Flight 2", "Flight 3", "Codes", "Headphones", "Showdown" } },
+        { "zm_buried", new[] { "Cipher", "Time Travel", "Sharpshooter" } },
+        { "zm_tomb", new[] { "Chests Filled", "Ascend from Darkness", "Freedom" } }
     };
 
 	vars.map_uiNames = new Dictionary<string, string>
@@ -28,15 +36,29 @@ startup
 		{ "zm_tomb", "Origins" }
 	};
 
-
-    foreach (var map in vars.map_splits)
+    string soloTag = ">>>> SOLO <<<<";
+    settings.Add(soloTag);
+    foreach (var map in vars.solo_map_splits)
     {
-        string uiName = vars.map_uiNames[map.Key];
-        settings.Add(uiName); // top-level map
+        string mapString = map.Key + "_solo";
+        settings.Add(mapString, true, vars.map_uiNames[map.Key], soloTag);
 
         foreach (var split in map.Value)
         {
-            settings.Add(split, true, split, uiName); // map split
+            settings.Add(split + "_solo", true, split, mapString);
+        }
+    }
+
+    string coopTag = ">>>> COOP <<<<";
+    settings.Add(coopTag);
+    foreach (var map in vars.coop_map_splits)
+    {
+        string mapString = map.Key + "_coop";
+        settings.Add(mapString, true, vars.map_uiNames[map.Key], coopTag);
+
+        foreach (var split in map.Value)
+        {
+            settings.Add(split + "_coop", true, split, mapString);
         }
     }
 
@@ -51,24 +73,21 @@ update
         {
             using (StreamReader r = new StreamReader(new FileStream(vars.filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
             {
-                int parsedSplits;
-                int parsedTime;
+                int parsedTime, parsedSplits, solo;
                 string[] data = r.ReadToEnd().Split('|');
-                if (data.Length >= 3)
+                if (data.Length >= 4)
                 {
-                    vars.mapName = data[0];
-                    if (int.TryParse(data[1], out parsedSplits) && int.TryParse(data[2], out parsedTime))
+                    string newMapName = data[0];
+                    if(int.TryParse(data[1], out parsedSplits) && int.TryParse(data[2], out parsedTime) && int.TryParse(data[3], out solo))
                     {
-                        /*
                         if(vars.mapName != newMapName)
                         {
                             vars.split = 0;
                         }
-                        vars.mapName = newMapName;
-                        */
                         vars.splitValue = parsedSplits;
                         vars.timeValue = parsedTime;
-
+                        vars.mapName = newMapName;
+                        vars.solo = solo;
                     }
                 }
             }
@@ -91,8 +110,10 @@ start
 {
 	if(vars.timeValue == 50) //start after game writes 1st tick in T6EE.dat
 	{
-		vars.splits = vars.map_splits[vars.mapName];
-		vars.split = 0;
+        vars.split = 0;
+        vars.splits = (vars.solo == 1)
+            ? vars.solo_map_splits[vars.mapName]
+            : vars.coop_map_splits[vars.mapName];
 		return true;
 	}
 }
@@ -101,15 +122,12 @@ split
 {
 	if(vars.splitValue > vars.split)
 	{
-		if(settings[vars.splits[vars.split++]])
+		if(settings[vars.splits[vars.split++] + "_" + (vars.solo == 1 ? "solo" : "coop")])
             return true;
 	}
 }
 
 reset
 {
-	if(vars.timeValue == 0)
-	{
-		return true;
-	}
+    if(vars.timeValue == 0) return true;
 }

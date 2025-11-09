@@ -4,10 +4,11 @@
 #define STATS_FILE "T6EE/T6EE.stats"
 #define GIT_LINK "github.com/HuthTV/T6-EE-Timer"
 #define SOLO_NETWORK_FRAME 100
-#define COOP_NETWORK_FRAME 100
+#define COOP_NETWORK_FRAME 50
 #define SUPER_Y_INCREMENT 305
 #define TIMER_Y_INCREMENT 16
 #define TIMER_X_OFFSET 2
+#define IS_SOLO (level.players.size == 1)
 #define TIMER_ACTIVE_COLOR (0.99, 0.91, 0.99)
 #define TIMER_COMPLETE_COLOR (0.99, 0.58, 0.99)
 
@@ -97,7 +98,7 @@ super_timer()
     self.color = TIMER_ACTIVE_COLOR;
 
     flag_wait("timer_start");
-    while(!flag("game_over"))
+    while(!flag("game_over") && !flag("timer_end"))
     {
         time = level.timing_offset + gettime() - level.T6EE_START_TIME;
         frame_string = "^3Total ^7" + game_time_string(time);
@@ -105,7 +106,6 @@ super_timer()
         self set_safe_text(frame_string);
         wait 0.05;
     }
-    flag_wait("timer_end");
     if(level.script == "zm_buried") self.color = TIMER_COMPLETE_COLOR;
 }
 
@@ -131,7 +131,7 @@ setup_start_data()
     {
         //regular timing
         livesplit_handle = fs_fopen(TIMER_FILE, "write");
-        fs_write( livesplit_handle, "zm_map|0|0" );    // map|split|time
+        fs_write( livesplit_handle, "zm_map|0|0|0" );    // map|split|time|solo
         fs_fclose( livesplit_handle );
     }
 }
@@ -139,7 +139,6 @@ setup_start_data()
 stats_tracking()
 {
     //permanent stats
-
     init_stats();
     if(fs_testfile(STATS_FILE))
     {
@@ -291,12 +290,12 @@ handle_chat_commands()
 
             case "stats":
                 status = toggle_setting("show_stats");
-                iprintln("Display stats " + (status ? "^1disabled" : "^2enabled"));
+                iprintln("Display stats " + (status ? "^2enabled" : "^1disabled"));
                 break;
 
             case "timer":
                 status = toggle_setting("hud_timer");
-                iprintln("HUD Timer " + (status ? "^1disabled" : "^2enabled") + "^7 - use ^3fast_restart");
+                iprintln("HUD Timer " + (status ? "^2enabled" : "^1disabled") + "^7 - use ^3fast_restart");
                 break;
 
             case "strafe":
@@ -499,7 +498,7 @@ game_over_wait()
 write_livesplit_data( time )
 {
         livesplit_handle = fs_fopen(TIMER_FILE, "write");
-        livesplit_data = level.script + "|" + level.T6EE_SPLIT_NUM + "|" + time;
+        livesplit_data = level.script + "|" + level.T6EE_SPLIT_NUM + "|" + time + "|"  + IS_SOLO;
         fs_write( livesplit_handle, livesplit_data );
         fs_fclose( livesplit_handle );
 }
@@ -690,7 +689,7 @@ upgrades_bank()
         self player_rig_fridge("svu_upgraded_zm+vzoom");
     }
 
-    if(level.script == "zm_buried" && level.players.size == 1)
+    if(level.script == "zm_buried" && IS_SOLO)
     {
         self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
         self player_rig_fridge("tar21_upgraded_zm+mms");
@@ -754,11 +753,10 @@ verify_network_frame()
 
 incorrect_network_frame()
 {
-    solo = level.players.size == 1;
     start = gettime();
     wait_network_frame();
     delay = gettime() - start;
-    return (solo && delay != SOLO_NETWORK_FRAME) || (!solo && delay != COOP_NETWORK_FRAME);
+    return (IS_SOLO && delay != SOLO_NETWORK_FRAME) || (!IS_SOLO && delay != COOP_NETWORK_FRAME);
 }
 
 init_default_config()
