@@ -51,6 +51,8 @@ init()
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
     level.T6EE_STATS_ACTIVE = int(level.T6EE_CFG["show_stats"]);
     level.T6EE_SUPER_TIMING = int(level.T6EE_CFG["super_timing"]);
+    if(IS_ORIGINS && int(level.T6EE_CFG["old_tank"])) replacefunc(getfunction("maps/mp/zm_tomb_tank", "tank_push_player_off_edge"), ::replace_tank_push_player_off_edge);
+
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
     flag_init("timer_end");
     flag_init("timer_start");
@@ -278,6 +280,11 @@ handle_chat_commands()
         level waittill("say", message, player);
         switch(tolower(message))
         {
+            case "tank":
+                status = toggle_setting("old_tank");
+                iprintln("Tank push trigger " + (!status ? "^2enabled" : "^1disabled"));
+                break;
+
             case "super":
                 status = toggle_setting("super_timing");
                 iprintln("Super timing " + (status ? "^2enabled" : "^1disabled"));
@@ -747,6 +754,7 @@ init_default_config()
     level.T6EE_CFG["console_strafe"] = 0;
     level.T6EE_CFG["show_stats"] = 1;
     level.T6EE_CFG["super_timing"] = 0;
+    level.T6EE_CFG["old_tank"] = 0;
 }
 
 read_config()
@@ -1014,4 +1022,9 @@ game_time_string(duration)
     time_string += (ce > 9) ? "." + int(ce) : ".0" + int(ce);
 
 	return time_string;
+}
+
+replace_tank_push_player_off_edge()
+{
+    return;
 }
