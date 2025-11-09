@@ -18,7 +18,7 @@
 #define TIMER_COMPLETE_COLOR (0.99, 0.58, 0.99)
 #define FS_WRITE_CLOSE(path, data) owc_handle = fs_fopen(path, "write"); fs_write(owc_handle, data); fs_fclose(owc_handle)
 #define FS_READ_CLOSE(path, data) orc_handle = fs_fopen(path, "read"); data = fs_read(orc_handle); fs_fclose(orc_handle)
-#define IS_VICTIS maps\mp\zombies\_zm_pers_upgrades::is_pers_system_active()
+#define IS_VICTIS (IS_TRANZIT || IS_DIE_RISE || IS_BURIED)
 
 #include maps\mp\_utility;
 #include maps\mp\zombies\_zm;
@@ -29,16 +29,11 @@
 main()
 {
     setdvar("scr_allowFileIo", 1);
-
     init_default_config();
     if(fs_testfile(CFG_FILE))
-    {
         read_config();  //read cfg file if exists
-    }
     else
-    {
         write_config(); //create default cfg file
-    }
 }
 
 init()
@@ -51,9 +46,9 @@ init()
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
     level.T6EE_STATS_ACTIVE = int(level.T6EE_CFG["show_stats"]);
     level.T6EE_SUPER_TIMING = int(level.T6EE_CFG["super_timing"]);
+    if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
     if(IS_ORIGINS && int(level.T6EE_CFG["old_tank"])) replacefunc(getfunction("maps/mp/zm_tomb_tank", "tank_push_player_off_edge"), ::replace_tank_push_player_off_edge);
 
-    if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
     flag_init("timer_end");
     flag_init("timer_start");
 
@@ -72,15 +67,19 @@ init()
     thread setup_splits_and_labels();
     thread handle_chat_commands();
     thread game_over_wait();
-    if(level.T6EE_STATS_ACTIVE) thread stats_tracking();
-    timer_start_wait();
 
+    if(level.T6EE_STATS_ACTIVE) thread stats_tracking();
+    set_strafe_speed( int(level.T6EE_CFG["console_strafe"]) );
+
+    timer_start_wait();
     level.T6EE_SPLIT = [];
+
     if((level.T6EE_HUD) && level.non_first_super_map)
     {
         level.T6EE_SUPER_HUD = newhudelem();
         level.T6EE_SUPER_HUD thread super_timer();
     }
+
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
     {
         level.T6EE_SPLIT[split] = spawnstruct();
@@ -88,6 +87,7 @@ init()
         level.T6EE_SPLIT[split] process_split();
         wait 0.05;
     }
+
     flag_set("timer_end");
 }
 
@@ -98,8 +98,7 @@ on_player_connect()
     {
         level waittill("connected", player);
         player thread on_player_spawned();
-        if(int(level.T6EE_CFG["hud_speed"]) == 1)
-            player thread speedometer();
+        if(int(level.T6EE_CFG["hud_speed"]) == 1) player thread speedometer();
     }
 }
 
@@ -128,11 +127,11 @@ super_timer()
     flag_wait("timer_start");
     while(!flag("game_over") && !flag("timer_end"))
     {
+        wait 0.05;
         time = level.timing_offset + gettime() - level.T6EE_START_TIME;
         frame_string = "^3Total ^7" + game_time_string(time);
         self.split_string = frame_string;
         self set_safe_text(frame_string);
-        wait 0.05;
     }
     if(IS_BURIED) self.color = TIMER_COMPLETE_COLOR;
 }
@@ -143,6 +142,7 @@ setup_start_data()
     flag_wait("initial_players_connected");
     if(IS_VICTIS && level.T6EE_SUPER_TIMING) iprintln("Super EE timing ^2enabled");
     level.non_first_super_map = level.T6EE_SUPER_TIMING && (IS_DIE_RISE || IS_BURIED) && fs_testfile(TIMER_FILE);
+
     if(level.non_first_super_map)
     {
         //super timing, don't reset time
@@ -164,13 +164,9 @@ stats_tracking()
     //permanent stats
     init_stats();
     if(fs_testfile(STATS_FILE))
-    {
         read_stats();
-    }
     else
-    {
         write_stats();
-    }
     flag_wait("initial_players_connected");
 
     //session stats
@@ -182,7 +178,7 @@ stats_tracking()
     set_dvar_if_unset(completions_string, 0);
 
     //dont track mid run super maps
-    if(!level.T6EE_SUPER_TIMING || IS_TRANZIT)
+    if( !level.T6EE_SUPER_TIMING || IS_TRANZIT || !IS_VICTIS)
     {
         flag_wait("timer_start");
         level.T6EE_STATS[restarts_string] = int(level.T6EE_STATS[restarts_string]) + 1;
@@ -190,8 +186,10 @@ stats_tracking()
         write_stats();
         iprintln("[Restarts] Total: " + level.T6EE_STATS[restarts_string] + " Session: " + getdvarint(restarts_string) + "\n[Completions] Total: " + level.T6EE_STATS[completions_string] + " Session: " + getdvarint(completions_string));
     }
+
     //track completions
     flag_wait("timer_end");
+    if(level.T6EE_SUPER_TIMING && (IS_TRANZIT || IS_DIE_RISE)) return;
     level.T6EE_STATS[completions_string] = int(level.T6EE_STATS[completions_string]) + 1;
     setdvar(completions_string, getdvarint(completions_string) + 1);
     write_stats();
@@ -200,10 +198,14 @@ stats_tracking()
 init_stats()
 {
     level.T6EE_STATS = [];
+
     foreach(map in array("zm_transit_", "zm_highrise_", "zm_prison_", "zm_buried_", "zm_tomb_", "super_"))
     {
-        for(i = 4; i > 0; i--) level.T6EE_STATS[map + i + "p_completions"] = 0;
-        for(i = 4; i > 0; i--) level.T6EE_STATS[map + i + "p_restarts"] = 0;
+        for(i = 4; i > 0; i--)
+        {
+            level.T6EE_STATS[map + i + "p_completions"] = 0;
+            level.T6EE_STATS[map + i + "p_restarts"] = 0;
+        }
     }
 }
 
@@ -212,12 +214,14 @@ read_stats()
     stats_handle = fs_fopen(STATS_FILE, "read");
     stats = fs_read(stats_handle);
     tokens = strtok(stats, "\n");
+
     foreach(stat in tokens)
     {
         split = strtok(stat, "=");
         println("Loaded stat: " + split[0] + " = " + split[1]);
         level.T6EE_STATS[split[0]] = split[1];
     }
+
     fs_fclose(stats_handle);
 }
 
@@ -225,9 +229,8 @@ write_stats()
 {
     data = "";
     foreach(stat in getarraykeys(level.T6EE_STATS))
-    {
         data += stat + "=" + level.T6EE_STATS[stat] + "\n";
-    }
+
     fs_remove(STATS_FILE);
     FS_WRITE_CLOSE(STATS_FILE, data);
 }
@@ -242,12 +245,11 @@ process_split()
         self.split_label = level.T6EE_LABELS[self.split_id];
         self.timer draw_client_split(self.split_index);
     }
+
     self thread split_refresh();
     wait_for_split(self.split_id);
-    if(self.split_id == "jetgun_power_off")
-    {
-        handle_tranzit_branch();
-    }
+
+    if(self.split_id == "jetgun_power_off") handle_tranzit_branch();
     level.T6EE_SPLIT_NUM++;
 }
 
@@ -269,20 +271,23 @@ split_refresh()
         if(self.split_index < level.T6EE_SPLIT_NUM) break;
         wait 0.05;
     }
+
     if(!flag("game_over")) self.timer.color = TIMER_COMPLETE_COLOR;
 }
 
 handle_chat_commands()
 {
     flag_wait("initial_blackscreen_passed");
+
     while(true)
     {
         level waittill("say", message, player);
+
         switch(tolower(message))
         {
             case "tank":
                 status = toggle_setting("old_tank");
-                iprintln("Tank push trigger " + (!status ? "^2enabled" : "^1disabled"));
+                iprintln("Tank push trigger " + (!status ? "^2normal" : "^1removed"));
                 break;
 
             case "super":
@@ -309,6 +314,7 @@ handle_chat_commands()
             case "speed":
                 status = toggle_setting("hud_speed");
                 speed_active = isdefined(player.speedometer);
+
                 if(speed_active)
                 {
                     player notify( "kill_speedometer" );
@@ -318,6 +324,7 @@ handle_chat_commands()
                 {
                     player thread speedometer();
                 }
+
                 player iprintln("Speedometer - " + (speed_active ? "^1disabled" : "^2enabled"));
                 break;
 
@@ -345,10 +352,10 @@ handle_chat_commands()
 
 toggle_setting(key)
 {
-    new = !int(level.T6EE_CFG[key]);
-    level.T6EE_CFG[key] = new;
+    new_val = !int(level.T6EE_CFG[key]);
+    level.T6EE_CFG[key] = new_val;
     write_config();
-    return new;
+    return new_val;
 }
 
 set_speedometer_color()
@@ -397,6 +404,7 @@ speedometer()
 {
     self endon("kill_speedometer");
     flag_wait("timer_start");
+
     self.speedometer = createfontstring("default" , 1.4);
     self.speedometer.alpha = 0.8;
     self.speedometer.hidewheninmenu = 1;
@@ -407,11 +415,6 @@ speedometer()
         self set_speedometer_color();
         wait 0.05;
     }
-}
-
-apply_strafe_settings()
-{
-    set_strafe_speed( int(level.T6EE_CFG["console_strafe"]) );
 }
 
 draw_client_split( index )
@@ -440,6 +443,7 @@ timer_start_wait()
 game_start_check()
 {
     flag_wait("initial_blackscreen_passed");
+
     if(!isdefined(level.T6EE_START_TIME))
     {
         level.T6EE_START_TIME = gettime();
@@ -450,6 +454,7 @@ game_start_check()
 mob_start_check()
 {
     flag_wait("initial_players_connected");
+
     while(!flag("timer_start"))
     {
         foreach(ghost in getplayers())
@@ -465,6 +470,7 @@ mob_start_check()
                 }
             }
         }
+
         wait 0.05;
     }
 }
@@ -505,6 +511,7 @@ wait_for_split(split)
         case "jetgun_power_off":
             level waittill("power_event_complete");
             split = false;
+
             while(!split)
             {
                 if( level.sq_progress["rich"]["A_jetgun_built"] > 0 )
@@ -658,6 +665,7 @@ upgrade_dvars()
 
     set_dvar_if_unset("full_bank", 1);
     set_dvar_if_unset("pers_insta_kill", !IS_TRANZIT);
+
     foreach(pers_perk in  level.T6EE_upgrades)
         set_dvar_if_unset(pers_perk, 1);
 }
@@ -688,6 +696,7 @@ upgrades_bank()
     }
 
     flag_wait("initial_blackscreen_passed");
+
     if(getdvarint("full_bank"))
     {
         self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
@@ -730,12 +739,12 @@ player_rig_fridge(weapon)
 verify_network_frame()
 {
     flag_wait("initial_blackscreen_passed");
+
     while(incorrect_network_frame())
     {
         iprintln("^1BAD NETWORK FRAME");
         wait 5;
     }
-
 }
 
 incorrect_network_frame()
@@ -743,40 +752,45 @@ incorrect_network_frame()
     start = gettime();
     wait_network_frame();
     delay = gettime() - start;
+
     return (IS_SOLO && delay != SOLO_NETWORK_FRAME) || (!IS_SOLO && delay != COOP_NETWORK_FRAME);
 }
 
 init_default_config()
 {
     level.T6EE_CFG = [];
-    level.T6EE_CFG["hud_timer"] = 1;
-    level.T6EE_CFG["hud_speed"] = 1;
-    level.T6EE_CFG["console_strafe"] = 0;
-    level.T6EE_CFG["show_stats"] = 1;
-    level.T6EE_CFG["super_timing"] = 0;
-    level.T6EE_CFG["old_tank"] = 0;
+    level.T6EE_CFG["hud_timer"]         = 1;
+    level.T6EE_CFG["hud_speed"]         = 1;
+    level.T6EE_CFG["console_strafe"]    = 0;
+    level.T6EE_CFG["show_stats"]        = 1;
+    level.T6EE_CFG["super_timing"]      = 0;
+    level.T6EE_CFG["old_tank"]          = 0;
 }
 
 read_config()
 {
     config_handle = fs_fopen(CFG_FILE, "read");
     settings = fs_read(config_handle);
+
     foreach(setting in strtok(settings, "\n"))
     {
         split = strtok(setting, "=");
         println("Loaded setting: " + split[0] + " = " + split[1]);
         level.T6EE_CFG[split[0]] = split[1];
     }
+
     fs_fclose(config_handle);
 }
 
 write_config()
 {
     data = "";
+
     foreach(setting in getarraykeys(level.T6EE_CFG))
     {
         data += setting + "=" + level.T6EE_CFG[setting] + "\n";
     }
+
     fs_remove(CFG_FILE);
     FS_WRITE_CLOSE(CFG_FILE, data);
 }
@@ -853,7 +867,8 @@ set_safe_text(text)
 {
 	level.string_count += 1;
 
-	level notify("textset");  // Notify overflow monitor on setText
+    // Notify overflow monitor on setText
+	level notify("textset");
     self.text_string = text;
 	self setText(text);
 }
@@ -931,24 +946,20 @@ precache_hud_strings()
             precachestring( &"ZM_BURIED_SQ_SEARCHING");
             precachestring( &"ZOMBIE_BUILD_PIECE_SWITCH");
             precachestring( &"ZOMBIE_EQUIP_TURBINE_HOWTO");
-            precachestring( &"ZM_BURIED_EQ_SP_HTS");//springpad
-            precachestring( &"ZM_BURIED_EQ_SW_HTS");//subwoof
-            precachestring( &"ZM_BURIED_EQ_HC_HTS");//headchopper
-
+            precachestring( &"ZM_BURIED_EQ_SP_HTS");    //springpad
+            precachestring( &"ZM_BURIED_EQ_SW_HTS");    //subwoof
+            precachestring( &"ZM_BURIED_EQ_HC_HTS");    //headchopper
             precachestring( &"ZM_BURIED_GIVING");
             precachestring( &"ZOMBIE_TIMEBOMB_PICKUP");
             precachestring( &"ZOMBIE_TIMEBOMB_HOWTO");
-
             precachestring( &"ZM_BURIED_BOOZE_G");
             precachestring( &"ZM_BURIED_BOOZE_B");
             precachestring( &"ZM_BURIED_I_NEED_BOOZE");
             precachestring( &"ZM_BURIED_I_SAID_BOOZE");
-
             precachestring( &"ZM_BURIED_CANDY_G");
             precachestring( &"ZM_BURIED_CANDY_B");
             precachestring( &"ZM_BURIED_I_WANT_CANDY");
             precachestring( &"ZM_BURIED_THATS_NOT_CANDY");
-
             precachestring( &"ZM_BURIED_DRAW");
             precachestring( &"ZM_BURIED_KEY_G");
             precachestring( &"ZM_BURIED_UNLOCKING");
@@ -975,6 +986,7 @@ precache_hud_strings()
     precachestring( &"ZOMBIE_SUICIDING");
 
     flag_wait("initial_players_connected");
+
     //chache string that are player name specific ahead of time
     tmp_strings = [];
     runners = getplayers();
@@ -1010,15 +1022,13 @@ precache_hud_strings()
 game_time_string(duration)
 {
 	total_sec = int(duration / 1000);
+    mn = int(total_sec / 60);   //minutes
+    se = int(total_sec % 60);   //seconds
+    ce = (duration / 10) % 100; //centiseconds
+
     time_string = "";
-
-    mn = int(total_sec / 60);       //minutes
-    time_string += (mn > 9) ? int(mn) : "0" + int(mn);
-
-    se = int(total_sec % 60);       //seconds
-    time_string += (se > 9) ? ":" + se : ":0" + se;
-
-    ce = (duration % 1000) / 10;    //centiseconds
+    time_string += (mn > 9) ? int(mn)       : "0" + int(mn);
+    time_string += (se > 9) ? ":" + se      : ":0" + se;
     time_string += (ce > 9) ? "." + int(ce) : ".0" + int(ce);
 
 	return time_string;
