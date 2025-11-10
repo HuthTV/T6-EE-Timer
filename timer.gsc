@@ -62,7 +62,6 @@ init()
     thread on_player_connect();
     thread verify_network_frame();
     thread run_anticheat();
-    thread apply_strafe_settings();
     thread upgrade_dvars();
     thread setup_splits_and_labels();
     thread handle_chat_commands();
@@ -1015,12 +1014,12 @@ precache_hud_strings()
     }
 }
 
-game_time_string(duration)
+game_time_string(time)
 {
-	total_sec = int(duration / 1000);
+	total_sec = int(time / 1000);
     mn = int(total_sec / 60);   //minutes
     se = int(total_sec % 60);   //seconds
-    ce = (duration / 10) % 100; //centiseconds
+    ce = (time % 1000) / 10;    //centiseconds
 
     time_string = "";
     time_string += (mn > 9) ? int(mn)       : "0" + int(mn);
