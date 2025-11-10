@@ -195,20 +195,6 @@ stats_tracking()
     write_stats();
 }
 
-init_stats()
-{
-    level.T6EE_STATS = [];
-
-    foreach(map in array("zm_transit_", "zm_highrise_", "zm_prison_", "zm_buried_", "zm_tomb_", "super_"))
-    {
-        for(i = 4; i > 0; i--)
-        {
-            level.T6EE_STATS[map + i + "p_completions"] = 0;
-            level.T6EE_STATS[map + i + "p_restarts"] = 0;
-        }
-    }
-}
-
 read_stats()
 {
     stats_handle = fs_fopen(STATS_FILE, "read");
@@ -233,6 +219,20 @@ write_stats()
 
     fs_remove(STATS_FILE);
     FS_WRITE_CLOSE(STATS_FILE, data);
+}
+
+init_stats()
+{
+    level.T6EE_STATS = [];
+
+    foreach(map in array("zm_transit_", "zm_highrise_", "zm_prison_", "zm_buried_", "zm_tomb_", "super_"))
+    {
+        for(i = 4; i > 0; i--)
+        {
+            level.T6EE_STATS[map + i + "p_completions"] = 0;
+            level.T6EE_STATS[map + i + "p_restarts"] = 0;
+        }
+    }
 }
 
 process_split()
@@ -663,7 +663,6 @@ upgrade_dvars()
             level.T6EE_upgrades[level.T6EE_upgrades.size] = stat_name;
     }
 
-    set_dvar_if_unset("full_bank", 1);
     set_dvar_if_unset("pers_insta_kill", !IS_TRANZIT);
 
     foreach(pers_perk in  level.T6EE_upgrades)
@@ -697,11 +696,8 @@ upgrades_bank()
 
     flag_wait("initial_blackscreen_passed");
 
-    if(getdvarint("full_bank"))
-    {
-        self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
-        self.account_value = level.bank_account_max;
-    }
+    self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
+    self.account_value = level.bank_account_max;
 }
 
 player_rig_fridge(weapon)

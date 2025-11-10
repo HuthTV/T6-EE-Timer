@@ -53,10 +53,9 @@ Players can initiate a fast restart by typing `r`, `restart`, or `fast_restart` 
 On Die Rise, an upgraded SVU will be placed in each player's fridge. On Buried (solo), a TAR-21 MMS will be placed in the player's fridge.
 
 ## ✨ Persistent Upgrades and Bank 
-Upon spawning, players will be awarded all persistent upgrades except Insta-Kill. The player's bank will also be set to the maximum amount. To change which upgrades are active, use the following boolean console DVARs to enable or disable specific upgrades or bank fill.
+Upon spawning, players will be awarded all persistent upgrades except Insta-Kill. The player's bank will also be set to the maximum amount. To change which upgrades are active, use the following boolean console DVARs to enable or disable specific upgrades.
 
 ```
-full_bank
 pers_jugg
 pers_boarding
 pers_carpenter
