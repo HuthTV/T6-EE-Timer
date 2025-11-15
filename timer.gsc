@@ -26,19 +26,16 @@
 #include maps\mp\gametypes_zm\_hud_util;
 #include common_scripts\utility;
 
-main()
+init()
 {
+    if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
     setdvar("scr_allowFileIo", 1);
     init_default_config();
     if(fs_testfile(CFG_FILE))
         read_config();  //read cfg file if exists
     else
         write_config(); //create default cfg file
-}
 
-init()
-{
-    if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
     level.T6EE_Y_OFFSET = -25;
@@ -51,7 +48,6 @@ init()
 
     flag_init("timer_end");
     flag_init("timer_start");
-
     if(level.T6EE_HUD) //HUD off → prevent conflict with other scripts
     {
         thread overflow_manager();
@@ -132,7 +128,7 @@ super_timer()
         self.split_string = frame_string;
         self set_safe_text(frame_string);
     }
-    if(IS_BURIED) self.color = TIMER_COMPLETE_COLOR;
+    if(IS_BURIED && flag("timer_end")) self.color = TIMER_COMPLETE_COLOR;
 }
 
 setup_start_data()
@@ -183,6 +179,7 @@ stats_tracking()
         level.T6EE_STATS[restarts_string] = int(level.T6EE_STATS[restarts_string]) + 1;
         setdvar(restarts_string, getdvarint(restarts_string) + 1);
         write_stats();
+        wait 1; //wait for welcome message to fade
         iprintln("[Restarts] Total: " + level.T6EE_STATS[restarts_string] + " Session: " + getdvarint(restarts_string) + "\n[Completions] Total: " + level.T6EE_STATS[completions_string] + " Session: " + getdvarint(completions_string));
     }
 
@@ -606,6 +603,10 @@ wait_for_split(split)
             level waittill_any("sq_richtofen_complete", "sq_maxis_complete");
             break;
 
+        case "mined_games":
+            level waittill_any("end_game_reward_starts_maxis", "end_game_reward_starts_richtofen");
+            break;
+
         //Origins
         case "NML":
             flag_wait("activate_zone_nml");
@@ -824,6 +825,7 @@ setup_splits_and_labels()
     level.T6EE_LABELS["cipher"] = "Cipher";
     level.T6EE_LABELS["time_travel"] = "Time Travel";
     level.T6EE_LABELS["sharpshooter"] = "Sharpshooter";
+    level.T6EE_LABELS["mined_games"] = "Mined Games";
 
     // Origins
     level.T6EE_LABELS["NML"] = "NML";
@@ -853,6 +855,11 @@ setup_splits_and_labels()
         splits["zm_prison"] = strtok("plane_1|plane_2|plane_3|codes|fight", "|");
         splits["zm_buried"] = strtok("cipher|time_travel|sharpshooter", "|");
         splits["zm_tomb"] = strtok("boxes|AFD|freedom", "|");
+    }
+
+    if(level.T6EE_SUPER_TIMING)
+    {
+        splits["zm_buried"][splits["zm_buried"].size] = "mined_games";
     }
 
     level.T6EE_SPLIT_LIST = splits[level.script];
