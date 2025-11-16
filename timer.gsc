@@ -696,8 +696,12 @@ upgrades_bank()
 
     flag_wait("initial_blackscreen_passed");
 
-    self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
-    self.account_value = level.bank_account_max;
+    if(!level.T6EE_SUPER_TIMING || IS_TRANZIT)
+    {
+        self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
+        self.account_value = level.bank_account_max;
+    }
+
 }
 
 player_rig_fridge(weapon)
