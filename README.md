@@ -4,10 +4,10 @@ Timer for speedrunning all Black Ops II Easter Eggs. Features automatic start, s
 ## 📥 Installation
 Download the latest release from the link below and place the `T6EE.gsc` file in your Plutonium scripts folder: 
 <pre>C:\Users\%username%\AppData\Local\Plutonium\storage\t6\scripts\zm</pre>
-### **Latest T6EE release 5.1b ➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.1b/T6EE_5.1b.gsc)**
+### **Latest T6EE release 5.2 ➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.2/T6EE_5.2.gsc)**
 
 ## ⏱️ LiveSplit Setup
-To connect LiveSplit with the timer, you must install an autosplitter script (asl file) in your layout. You can find it here **➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.1/T6EE_5.1.asl)**  
+To connect LiveSplit with the timer, you must install an autosplitter script (asl file) in your layout. You can find it here **➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.2/T6EE_5.2.asl)**  
 
 - Open the layout editor by right-clicking LiveSplit and selecting `Edit Layout...`  
 - Click `+ > Control > Scriptable Auto Splitter` to add that component.
@@ -37,17 +37,22 @@ The timer tracks restarts and completions for every map and for any number of pl
 ## 💬 Chat commands
 
 Various commands are available to enter straight into the game chat, found in table below.
-| Command   | Description                                         |
-| --------- | --------------------------------------------------- |
-| timer   | Toggles the ingame timer (requires a map restart)   |
+| Command   | Description                                       |
+| --------- | ------------------------------------------------- |
+| timer   | Toggles the ingame timer (requires a reset)         |
+| super   | Toggle super EE timing mode                         |
 | strafe  | Switches strafe DVARs between console and PC values |
 | speed   | Toggles the speedometer                             |
-| stats   | Hide/show stats at start of run                     |
+| tank    | Toggle origins tank push trigger                    |
+| stats   | Toggle tracking reset/completions stats             |
 | restore | Resets your config file to default settings         |
 
 
 ## 🔄 Chat Restarts
 Players can initiate a fast restart by typing `r`, `restart`, or `fast_restart` in the game chat. To simplify restarts, players can bind a key to the say command. For example, `bind F2 say restart` in the game console.
+
+## 🧭 Super Easter Egg Timing
+Super Timing runs a single timer across all maps. Tranzit is unchanged, Die Rise and Buried will show the total time in-game. LiveSplit also won’t reset between maps. Buried has a super exlusive split for triggering the EE reward button after Sharpshooter.
 
 ## 🗄️ Fridge
 On Die Rise, an upgraded SVU will be placed in each player's fridge. On Buried (solo), a TAR-21 MMS will be placed in the player's fridge.
