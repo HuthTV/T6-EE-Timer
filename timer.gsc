@@ -684,7 +684,7 @@ upgrades_bank()
     }
     else if(IS_BURIED)
     {
-        self maps\mp\zombies\_zm_stats::set_client_stat("pers_flopper_counter", 1);
+        self maps\mp\zombies\_zm_stats::set_client_stat("pers_flopper_counter", getdvarint("pers_flopper_counter"));
     }
 
     flag_wait("initial_players_connected");

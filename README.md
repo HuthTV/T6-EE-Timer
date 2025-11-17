@@ -68,6 +68,7 @@ pers_insta_kill
 pers_nube_counter
 pers_revivenoperk
 pers_sniper_counter
+pers_flopper_counter
 pers_cash_back_prone
 pers_cash_back_bought
 pers_perk_lose_counter
