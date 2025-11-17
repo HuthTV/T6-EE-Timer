@@ -671,13 +671,20 @@ upgrade_dvars()
 
 upgrades_bank()
 {
-    foreach(upgrade in level.pers_upgrades)
+    if(!level.T6EE_SUPER_TIMING || IS_TRANZIT)
     {
-        for(i = 0; i < upgrade.stat_names.size; i++)
+        foreach(upgrade in level.pers_upgrades)
         {
-            val = (getdvarint(upgrade.stat_names[i]) > 0) * upgrade.stat_desired_values[i];
-            self maps\mp\zombies\_zm_stats::set_client_stat(upgrade.stat_names[i], val);
+            for(i = 0; i < upgrade.stat_names.size; i++)
+            {
+                val = (getdvarint(upgrade.stat_names[i]) > 0) * upgrade.stat_desired_values[i];
+                self maps\mp\zombies\_zm_stats::set_client_stat(upgrade.stat_names[i], val);
+            }
         }
+    }
+    else if(IS_BURIED)
+    {
+        self maps\mp\zombies\_zm_stats::set_client_stat("pers_flopper_counter", 1);
     }
 
     flag_wait("initial_players_connected");
@@ -695,12 +702,8 @@ upgrades_bank()
     }
 
     flag_wait("initial_blackscreen_passed");
-
-    if(!level.T6EE_SUPER_TIMING || IS_TRANZIT)
-    {
-        self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
-        self.account_value = level.bank_account_max;
-    }
+    self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
+    self.account_value = level.bank_account_max;
 
 }
 
