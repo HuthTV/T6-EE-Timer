@@ -671,6 +671,7 @@ upgrade_dvars()
 
 upgrades_bank()
 {
+    //Provide all upgrades for vitis maps. Only for tranzit during supers
     if(!level.T6EE_SUPER_TIMING || IS_TRANZIT)
     {
         foreach(upgrade in level.pers_upgrades)
@@ -682,29 +683,30 @@ upgrades_bank()
             }
         }
     }
-    else if(IS_BURIED)
+    else if(IS_BURIED) //Provide flopper on super runs
     {
         self maps\mp\zombies\_zm_stats::set_client_stat("pers_flopper_counter", getdvarint("pers_flopper_counter"));
     }
 
     flag_wait("initial_players_connected");
 
-    if(IS_DIE_RISE)
+    if(level.T6EE_SUPER_TIMING) //Only set super guns on die rise
     {
-        self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
-        self player_rig_fridge("svu_upgraded_zm+vzoom");
+         //Assumed tranzit fridge is never used
+        //Don't clear if player left gun in die rise
+        if(!IS_BURIED) self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
+        if(IS_DIE_RISE) self player_rig_fridge("svu_upgraded_zm+vzoom");
     }
-
-    if(IS_BURIED && IS_SOLO)
+    else
     {
-        self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
-        self player_rig_fridge("tar21_upgraded_zm+mms");
+        if(IS_DIE_RISE) self player_rig_fridge("svu_upgraded_zm+vzoom");
+        if(IS_BURIED && IS_SOLO) self player_rig_fridge("tar21_upgraded_zm+mms");
+        else self player_rig_fridge("mp5k_upgraded_zm");
     }
 
     flag_wait("initial_blackscreen_passed");
     self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
     self.account_value = level.bank_account_max;
-
 }
 
 player_rig_fridge(weapon)
