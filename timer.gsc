@@ -44,7 +44,6 @@ init()
     level.T6EE_STATS_ACTIVE = int(level.T6EE_CFG["show_stats"]);
     level.T6EE_SUPER_TIMING = int(level.T6EE_CFG["super_timing"]);
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
-    if(IS_ORIGINS && int(level.T6EE_CFG["old_tank"])) replacefunc(getfunction("maps/mp/zm_tomb_tank", "tank_push_player_off_edge"), ::replace_tank_push_player_off_edge);
 
     flag_init("timer_end");
     flag_init("timer_start");
@@ -54,6 +53,7 @@ init()
         thread precache_hud_strings();
     }
 
+    thread madeup_replaces();
     thread setup_start_data();
     thread on_player_connect();
     thread verify_network_frame();
@@ -84,6 +84,55 @@ init()
     }
 
     flag_set("timer_end");
+}
+
+madeup_replaces()
+{
+    if(IS_MOB)
+    {
+        return;
+    }
+
+    if(IS_ORIGINS && int(level.T6EE_CFG["old_tank"]))
+    {
+        replacefunc(getfunction("maps/mp/zm_tomb_tank", "tank_push_player_off_edge"), ::replace_tank_push_player_off_edge);
+        return;
+    }
+
+    flag_wait("initial_players_connected");
+    navcard_set();
+    level.starting_player_count = level.players.size;
+
+    if(int(level.T6EE_CFG["madeup"]) && level.starting_player_count < 4)
+    {
+        if(IS_TRANZIT && IS_SOLO)
+        {
+            replacefunc(getfunction("maps/mp/zm_transit_sq", "maxis_sidequest_b"), ::replace_maxis_sidequest_b);
+            replacefunc(getfunction("maps/mp/zm_transit_sq", "get_how_many_progressed_from"), ::replace_get_how_many_progressed_from);
+        }
+
+        if(IS_DIE_RISE)
+        {
+            replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_elevators"), ::replace_sq_atd_elevators);
+            replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_drg_puzzle"), ::replace_sq_atd_drg_puzzle);
+            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "wait_for_all_springpads_placed"), ::replace_wait_for_all_springpads_placed);
+            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_player_create_trigs"), ::replace_pts_should_player_create_trigs);
+            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_springpad_create_trigs"), ::replace_pts_should_springpad_create_trigs);
+            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_create_for_spot"), ::replace_pts_putdown_trigs_create_for_spot);
+            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "place_ball_think"), ::replace_place_ball_think);
+        }
+
+        if(IS_BURIED)
+        {
+            //replacefunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_start_wisp"), ::ctw_max_start_wisp);
+            replacefunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_fail_watch"), ::replace_ctw_max_fail_watch);
+            replacefunc(getfunction("maps/mp/zm_buried_sq_tpo", "_are_all_players_in_time_bomb_volume"), ::replace_are_all_players_in_time_bomb_volume);
+            replacefunc(getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_set_current_bulb"), ::replace_sq_bp_set_current_bulb);
+            replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_target_delete_timer"), ::replace_ows_target_delete_timer);
+            replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_targets_start"), ::replace_ows_targets_start);
+            replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "sq_metagame"), ::replace_sq_metagame);
+        }
+    }
 }
 
 on_player_connect()
@@ -200,7 +249,6 @@ read_stats()
     foreach(stat in tokens)
     {
         split = strtok(stat, "=");
-        println("Loaded stat: " + split[0] + " = " + split[1]);
         level.T6EE_STATS[split[0]] = split[1];
     }
 
@@ -281,6 +329,11 @@ handle_chat_commands()
 
         switch(tolower(message))
         {
+            case "madeup":
+                status = toggle_setting("madeup");
+                iprintln("Any player EE scripts " + (!status ? "^2enabled" : "^1disabled"));
+                break;
+
             case "tank":
                 status = toggle_setting("old_tank");
                 iprintln("Tank push trigger " + (!status ? "^2normal" : "^1removed"));
@@ -766,8 +819,10 @@ init_default_config()
     level.T6EE_CFG = [];
     level.T6EE_CFG["hud_timer"]         = 1;
     level.T6EE_CFG["hud_speed"]         = 1;
-    level.T6EE_CFG["console_strafe"]    = 0;
     level.T6EE_CFG["show_stats"]        = 1;
+    level.T6EE_CFG["madeup"]            = 1;
+
+    level.T6EE_CFG["console_strafe"]    = 0;
     level.T6EE_CFG["super_timing"]      = 0;
     level.T6EE_CFG["old_tank"]          = 0;
 }
@@ -780,7 +835,6 @@ read_config()
     foreach(setting in strtok(settings, "\n"))
     {
         split = strtok(setting, "=");
-        println("Loaded setting: " + split[0] + " = " + split[1]);
         level.T6EE_CFG[split[0]] = split[1];
     }
 
@@ -1045,7 +1099,487 @@ game_time_string(time)
 	return time_string;
 }
 
+/* ===================================NAV CARDS================================================= */
+navcard_set()
+{
+    map = getsubstr(level.script, 3);
+    stat_strings = array("sq_" + map + "_started", "navcard_applied_zm_" + map);
+
+    // Build NAV enter cards
+	foreach( runner in get_players())
+	{
+		foreach(stat in stat_strings)
+		{
+			if(!(runner maps\mp\zombies\_zm_stats::get_global_stat( stat ) ))
+			{
+				runner maps\mp\gametypes_zm\_globallogic_score::initPersStat( stat, 0 );
+				runner maps\mp\zombies\_zm_stats::increment_client_stat( stat, 0 );
+			}
+		}
+	}
+}
+
+/* =============================================================================================  */
+/*                                  ORIGINS FUNCTION OVERRIDES                                    */
+/* =============================================================================================  */
+
 replace_tank_push_player_off_edge()
 {
     return;
+}
+
+/* =============================================================== */
+/* The functions below are an independent implementation           */
+/* that emulates the behavior of the scripts found at:             */
+/* https://github.com/Hadi77KSA/Plutonium-T6-Any-Player-EE-Scripts */
+/* =============================================================== */
+
+/* =============================================================================================  */
+/*                                   TRANZIT FUNCTION OVERRIDES                                   */
+/* =============================================================================================  */
+
+//[Maxis] Allow solo player to complete turbine step
+replace_maxis_sidequest_b()
+{
+	level endon( "power_on" );
+
+	while ( true )
+	{
+		level waittill( "stun_avogadro", avogadro );
+
+		if ( isdefined( level.sq_progress["maxis"]["A_turbine_1"] ) && is_true( level.sq_progress["maxis"]["A_turbine_1"].powered ) && ( IS_SOLO || ( isdefined( level.sq_progress["maxis"]["A_turbine_2"] ) && is_true( level.sq_progress["maxis"]["A_turbine_2"].powered ))) )
+		{
+			if ( isdefined( avogadro ) && avogadro istouching( level.sq_volume ) )
+			{
+				level notify( "end_avogadro_turbines" );
+				break;
+			}
+		}
+	}
+
+	level notify( "maxis_stage_b" );
+    level thread [[getfunction("maps/mp/zm_transit_sq", "maxissay")]]("vox_maxi_avogadro_emp_0", ( 7737, -416, -142 ));
+    [[getfunction("maps/mp/zm_transit_sq", "update_sidequest_stats")]]("sq_transit_maxis_stage_3");
+	player = get_players();
+	player[0] setclientfield( "sq_tower_sparks", 1 );
+	player[0] setclientfield( "screecher_maxis_lights", 1 );
+	level thread [[getfunction("maps/mp/zm_transit_sq", "maxis_sidequest_complete_check")]]( "B_complete" );
+}
+
+//[Maxis] Allow solo player to progress
+replace_get_how_many_progressed_from( story, a, b )
+{
+	if ( !IS_SOLO && (isdefined( level.sq_progress[story][a] ) && !isdefined( level.sq_progress[story][b] ) || !isdefined( level.sq_progress[story][a] ) && isdefined( level.sq_progress[story][b] )) )
+		return 1;
+	else if ( IS_SOLO || isdefined( level.sq_progress[story][a] ) && isdefined( level.sq_progress[story][b] ) )
+		return 2;
+
+	return 0;
+}
+
+/* =============================================================================================  */
+/*                                  DIE RISE FUNCTION OVERRIDES                                   */
+/* =============================================================================================  */
+
+//Require as many elevator symbols as there are players ingame
+replace_sq_atd_elevators()
+{
+	a_elevators = array( "elevator_bldg1b_trigger", "elevator_bldg1d_trigger", "elevator_bldg3b_trigger", "elevator_bldg3c_trigger" );
+	a_elevator_flags = array( "sq_atd_elevator0", "sq_atd_elevator1", "sq_atd_elevator2", "sq_atd_elevator3" );
+
+	for ( i = 0; i < a_elevators.size; i++ )
+	{
+		trig_elevator = getent( a_elevators[i], "targetname" );
+        trig_elevator thread [[getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_watch_elevator")]]( a_elevator_flags[i] );
+	}
+
+    el = "sq_atd_elevator";
+	while( int(flag(el + "0")) + int(flag(el + "1")) + int(flag(el + "2")) + int(flag(el + "3")) < level.starting_player_count)
+	{
+		flag_wait_any_array( a_elevator_flags );
+		wait 0.5;
+	}
+
+	a_dragon_icons = getentarray( "elevator_dragon_icon", "targetname" );
+
+	foreach ( m_icon in a_dragon_icons )
+	{
+		v_off_pos = m_icon.m_lit_icon.origin;
+		m_icon.m_lit_icon unlink();
+		m_icon unlink();
+		m_icon.m_lit_icon.origin = m_icon.origin;
+		m_icon.origin = v_off_pos;
+		m_icon.m_lit_icon linkto( m_icon.m_elevator );
+		m_icon linkto( m_icon.m_elevator );
+		m_icon playsound( "zmb_sq_symbol_light" );
+	}
+
+	flag_set( "sq_atd_elevator_activated" );
+    [[getfunction("maps/mp/zm_highrise_sq_atd", "vo_richtofen_atd_elevators")]]();
+    level thread [[getfunction("maps/mp/zm_highrise_sq_atd", "vo_maxis_atd_elevators")]]();
+}
+
+//Require as many floor symbols as there are players ingame
+replace_sq_atd_drg_puzzle()
+{
+	level.sq_atd_cur_drg = 0;
+	a_puzzle_trigs = getentarray( "trig_atd_drg_puzzle", "targetname" );
+	a_puzzle_trigs = array_randomize( a_puzzle_trigs );
+
+	for ( i = 0; i < a_puzzle_trigs.size; i++ )
+        a_puzzle_trigs[i] thread [[getfunction("maps/mp/zm_highrise_sq_atd", "drg_puzzle_trig_think")]]( i );
+
+	while ( level.sq_atd_cur_drg < level.starting_player_count )
+		wait 1;
+
+    flag_set( "sq_atd_drg_puzzle_complete" );
+    foreach ( t_trig in a_puzzle_trigs )
+    {
+        //Disable trigger and light icon for reamaning floor symbols
+        if(t_trig.drg_active == 0)
+        {
+            t_trig disable_trigger();
+            symbol = getent( t_trig.target, "targetname" );
+            lit_icon = symbol.lit_icon;
+            original_pos = symbol.origin;
+            symbol.origin = lit_icon.origin;
+            lit_icon.origin = original_pos;
+        }
+    }
+
+    level thread [[getfunction("maps/mp/zm_highrise_sq_atd", "vo_maxis_atd_order_complete")]]();
+}
+
+//[Richtofen] Require only one tramplesteam per player
+replace_wait_for_all_springpads_placed( str_type, str_flag )
+{
+	a_spots = getstructarray( str_type, "targetname" );
+
+	while ( !flag( str_flag ) )
+	{
+		is_clear = 0;
+		foreach ( s_spot in a_spots )
+		{
+			if ( !isdefined( s_spot.springpad ) ) is_clear++;
+		}
+
+		if ( is_clear <= 4 - level.starting_player_count ) flag_set( str_flag );
+		wait 1;
+	}
+}
+
+//[Maxis] Allow springpad step to complete with <4 players
+replace_place_ball_think( t_place_ball, s_lion_spot )
+{
+	t_place_ball endon( "delete" );
+	t_place_ball waittill( "trigger" );
+
+	if ( level.starting_player_count > 3 )	//normal behaviour
+	{
+        [[getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_remove_for_spot")]]( s_lion_spot );
+        [[getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_remove_for_spot")]]( s_lion_spot.springpad_buddy );
+	}
+
+	self.zm_sq_has_ball = undefined;
+	s_lion_spot.which_ball = self.which_ball;
+	self notify( "zm_sq_ball_used" );
+	s_lion_spot.zm_pts_animating = 1;
+	s_lion_spot.springpad_buddy.zm_pts_animating = 1;
+	flag_set( "pts_2_generator_" + level.current_generator + "_started" );
+	s_lion_spot.which_generator = level.current_generator;
+	level.current_generator++;
+	if ( !isdefined( s_lion_spot.springpad_buddy.springpad ) ) s_lion_spot.springpad_buddy.springpad = s_lion_spot.springpad;
+    s_lion_spot.springpad thread[[getfunction("maps/mp/zm_highrise_sq_pts", "pts_springpad_fling")]]( s_lion_spot.script_noteworthy, s_lion_spot.springpad_buddy.springpad );
+	self.t_putdown_ball delete();
+
+	//After first ball is flung, ball carrier may place theirs on the tample steam of opposite trajectory
+	if ( level.starting_player_count == 3 )
+	{
+		for ( i = 0; i < level.players.size; i++ )
+		{
+			if ( isdefined( level.players[i].zm_sq_has_ball ) && level.players[i].zm_sq_has_ball )
+			{
+				foreach ( s_spot in getstructarray( "pts_lion", "targetname" ) )
+				{
+					if ( isdefined( s_spot.springpad ) && s_spot != s_lion_spot && s_spot.springpad_buddy != s_lion_spot )
+						replace_pts_putdown_trigs_create_for_spot( s_spot, level.players[i] );
+				}
+			}
+		}
+	}
+}
+
+//[Maxis] Solo/3p: ball can be placed on an active tramplesteam without needing a tramplesteam on opposite spot. In 3p only if a ball is already flying.
+replace_pts_should_player_create_trigs( player )
+{
+	a_lion_spots = getstructarray( "pts_lion", "targetname" );
+
+	foreach ( s_lion_spot in a_lion_spots )
+	{
+		if ( isdefined( s_lion_spot.springpad ) && ( isdefined( s_lion_spot.springpad_buddy.springpad ) || ( ( level.starting_player_count == 1 || ( level.starting_player_count == 3 && flag( "pts_2_generator_1_started" ) ) ) ) ) )
+			replace_pts_putdown_trigs_create_for_spot( s_lion_spot, player );
+	}
+}
+
+//[Maxis] Solo/3p: allow ball placement on tramplesteam without a receiving spot having a tramplesteam
+replace_pts_should_springpad_create_trigs( s_lion_spot )
+{
+	if ( isdefined( s_lion_spot.springpad ) && isdefined( s_lion_spot.springpad_buddy ) && ( isdefined( s_lion_spot.springpad_buddy.springpad ) || ( level.starting_player_count == 1 || ( level.starting_player_count == 3 && flag( "pts_2_generator_1_started" ) ) ) ) )
+	{
+		a_players = getplayers();
+
+		foreach ( player in a_players )
+		{
+			if ( isdefined( player.zm_sq_has_ball ) && player.zm_sq_has_ball )
+			{
+				replace_pts_putdown_trigs_create_for_spot( s_lion_spot, player );
+
+				if ( isdefined( s_lion_spot.springpad_buddy.springpad ) )
+					replace_pts_putdown_trigs_create_for_spot( s_lion_spot.springpad_buddy, player );
+			}
+		}
+	}
+}
+
+//[Maxis] Picking up a ball lets you place a second ball on a tramplesteam set already flinging one
+replace_pts_putdown_trigs_create_for_spot( s_lion_spot, player )
+{
+	if ( level.starting_player_count >= 4  && ( isdefined( s_lion_spot.which_ball ) || isdefined( s_lion_spot.springpad_buddy ) && isdefined( s_lion_spot.springpad_buddy.which_ball ) ) )
+		return;
+
+    t_place_ball = [[getfunction("maps/mp/zm_highrise_sq_pts", "sq_pts_create_use_trigger")]]( s_lion_spot.origin, 16, 70, &"ZM_HIGHRISE_SQ_PUTDOWN_BALL" );
+	player clientclaimtrigger( t_place_ball );
+	t_place_ball.owner = player;
+    player thread[[getfunction("maps/mp/zm_highrise_sq_pts", "place_ball_think")]]( t_place_ball, s_lion_spot );
+
+	if ( !isdefined( s_lion_spot.pts_putdown_trigs ) )
+		s_lion_spot.pts_putdown_trigs = [];
+
+	s_lion_spot.pts_putdown_trigs[player.characterindex] = t_place_ball;
+    level thread[[getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_springpad_delete_watcher")]]( player, s_lion_spot );
+}
+
+/* =============================================================================================  */
+/*                                   BURIED FUNCTION OVERRIDES                                    */
+/* =============================================================================================  */
+
+replace_are_all_players_in_time_bomb_volume( e_volume )
+{
+	n_players_in_position = 0;
+    a_players = get_players();
+	foreach ( player in a_players )
+	{
+		if ( player istouching( e_volume ) ) n_players_in_position++;
+	}
+
+	return n_players_in_position == a_players.size;;
+}
+
+replace_ctw_max_fail_watch()
+{
+    self endon( "death" );
+
+    do
+    {
+        wait 1;
+        n_starter_dist = distancesquared( self.origin, level.e_sq_sign_attacker.origin );
+    }
+    while (n_starter_dist < 262144 );
+
+    level thread[[getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_fail_vo")]]();
+    flag_set( "sq_wisp_failed" );
+}
+
+replace_sq_bp_set_current_bulb( str_tag )
+{
+	level endon( "sq_bp_correct_button" );
+	level endon( "sq_bp_wrong_button" );
+	level endon( "sq_bp_timeout" );
+
+	if ( isdefined( level.m_sq_bp_active_light ) )
+		level.str_sq_bp_active_light = "";
+
+    level.m_sq_bp_active_light = [[getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_light_on")]]( str_tag, "yellow" );
+	level.str_sq_bp_active_light = str_tag;
+
+	if ( level.starting_player_count > 2 )  //No timelimit for 1p/2p
+	{
+		wait 10;
+		level notify( "sq_bp_timeout" );
+	}
+}
+
+replace_ows_target_delete_timer()
+{
+	self endon( "death" );
+	wait 4;
+	self notify( "ows_target_timeout" );
+	level.misses_remaining--;
+
+	if ( level.misses_remaining < 0 )
+		flag_set( "sq_ows_target_missed" );
+}
+
+replace_ows_targets_start()
+{
+	n_cur_second = 0;
+	flag_clear( "sq_ows_target_missed" );
+	level.misses_remaining = sharpshooter_allowed_misses();
+    level thread[[getfunction("maps/mp/zm_buried_sq_ows", "sndsidequestowsmusic")]]();
+	a_sign_spots = getstructarray( "otw_target_spot", "script_noteworthy" );
+
+	while ( n_cur_second < 40 )
+	{
+        a_spawn_spots = [[getfunction("maps/mp/zm_buried_sq_ows", "ows_targets_get_cur_spots")]]( n_cur_second );
+
+		if ( isdefined( a_spawn_spots ) && a_spawn_spots.size > 0 )
+            [[getfunction("maps/mp/zm_buried_sq_ows", "ows_targets_spawn")]](a_spawn_spots);
+
+		wait 1;
+		n_cur_second++;
+	}
+
+	if ( !flag( "sq_ows_target_missed" ) )
+	{
+		flag_set( "sq_ows_success" );
+		playsoundatposition( "zmb_sq_target_success", ( 0, 0, 0 ) );
+	}
+	else
+		playsoundatposition( "zmb_sq_target_fail", ( 0, 0, 0 ) );
+
+	level notify( "sndEndOWSMusic" );
+}
+
+sharpshooter_allowed_misses()
+{
+    total_targets = 84;
+	switch ( level.starting_player_count )
+	{
+		case 1: return total_targets - 20;  //Candy Shop 20 targets
+		case 2: return total_targets - 39;  // + Candy Shop 19 targets
+		default: return 0; //All targets
+	}
+}
+
+
+//Super EE reward button
+replace_sq_metagame()
+{
+	level endon( "sq_metagame_player_connected" );
+	flag_wait( "sq_intro_vo_done" );
+
+	if ( flag( "sq_started" ) )
+		level waittill( "buried_sidequest_achieved" );
+
+    level thread[[getfunction("maps/mp/zm_buried_sq", "sq_metagame_turn_off_watcher")]]();
+	is_blue_on = 0;
+	is_orange_on = 0;
+	m_endgame_machine = getstruct( "sq_endgame_machine", "targetname" );
+	a_tags = [];
+	a_tags[0][0] = "TAG_LIGHT_1";
+	a_tags[0][1] = "TAG_LIGHT_2";
+	a_tags[0][2] = "TAG_LIGHT_3";
+	a_tags[1][0] = "TAG_LIGHT_4";
+	a_tags[1][1] = "TAG_LIGHT_5";
+	a_tags[1][2] = "TAG_LIGHT_6";
+	a_tags[2][0] = "TAG_LIGHT_7";
+	a_tags[2][1] = "TAG_LIGHT_8";
+	a_tags[2][2] = "TAG_LIGHT_9";
+	a_tags[3][0] = "TAG_LIGHT_10";
+	a_tags[3][1] = "TAG_LIGHT_11";
+	a_tags[3][2] = "TAG_LIGHT_12";
+	a_stat = [];
+	a_stat[0] = "sq_transit_last_completed";
+	a_stat[1] = "sq_highrise_last_completed";
+	a_stat[2] = "sq_buried_last_completed";
+	a_stat_nav = [];
+	a_stat_nav[0] = "navcard_applied_zm_transit";
+	a_stat_nav[1] = "navcard_applied_zm_highrise";
+	a_stat_nav[2] = "navcard_applied_zm_buried";
+	a_stat_nav_held = [];
+	a_stat_nav_held[0] = "navcard_applied_zm_transit";
+	a_stat_nav_held[1] = "navcard_applied_zm_highrise";
+	a_stat_nav_held[2] = "navcard_applied_zm_buried";
+	bulb_on = [];
+	bulb_on[0] = 0;
+	bulb_on[1] = 0;
+	bulb_on[2] = 0;
+	level.n_metagame_machine_lights_on = 0;
+	flag_wait( "start_zombie_round_logic" );
+    [[getfunction("maps/mp/zm_buried_sq", "sq_metagame_clear_lights")]]();
+	players = get_players();
+	player_count = players.size;
+
+	for ( n_player = 0; n_player < player_count; n_player++ )
+	{
+		for ( n_stat = 0; n_stat < a_stat.size; n_stat++ )
+		{
+			if ( isdefined( players[n_player] ) )
+			{
+				n_stat_value = players[n_player] maps\mp\zombies\_zm_stats::get_global_stat( a_stat[n_stat] );
+				n_stat_nav_value = players[n_player] maps\mp\zombies\_zm_stats::get_global_stat( a_stat_nav[n_stat] );
+			}
+
+			if ( n_stat_value == 1 )
+			{
+                m_endgame_machine [[getfunction("maps/mp/zm_buried_sq", "sq_metagame_machine_set_light")]]( n_player, n_stat, "sq_bulb_blue" );
+				is_blue_on = 1;
+			}
+			else if ( n_stat_value == 2 )
+			{
+                m_endgame_machine [[getfunction("maps/mp/zm_buried_sq", "sq_metagame_machine_set_light")]]( n_player, n_stat, "sq_bulb_orange" );
+				is_orange_on = 1;
+			}
+
+			if ( n_stat_nav_value )
+			{
+				level setclientfield( "buried_sq_egm_bulb_" + n_stat, 1 );
+				bulb_on[n_stat] = 1;
+			}
+		}
+	}
+
+	if ( level.n_metagame_machine_lights_on == player_count * 3 ) //Any player count
+	{
+		if ( is_blue_on && is_orange_on )
+			return;
+		else if ( !bulb_on[0] || !bulb_on[1] || !bulb_on[2] )
+			return;
+	}
+	else
+		return;
+
+	m_endgame_machine.activate_trig = spawn( "trigger_radius", m_endgame_machine.origin, 0, 128, 72 );
+	m_endgame_machine.activate_trig waittill( "trigger" );
+	m_endgame_machine.activate_trig delete();
+	m_endgame_machine.activate_trig = undefined;
+	level setclientfield( "buried_sq_egm_animate", 1 );
+	m_endgame_machine.endgame_trig = spawn( "trigger_radius_use", m_endgame_machine.origin, 0, 16, 16 );
+	m_endgame_machine.endgame_trig setcursorhint( "HINT_NOICON" );
+	m_endgame_machine.endgame_trig sethintstring( &"ZM_BURIED_SQ_EGM_BUT" );
+	m_endgame_machine.endgame_trig triggerignoreteam();
+	m_endgame_machine.endgame_trig usetriggerrequirelookat();
+	m_endgame_machine.endgame_trig waittill( "trigger" );
+	m_endgame_machine.endgame_trig delete();
+	m_endgame_machine.endgame_trig = undefined;
+    level thread[[getfunction("maps/mp/zm_buried_sq", "sq_metagame_clear_tower_pieces")]]();
+	playsoundatposition( "zmb_endgame_mach_button", m_endgame_machine.origin );
+	players = get_players();
+
+	foreach ( player in players )
+	{
+		for ( i = 0; i < a_stat.size; i++ )
+		{
+			player maps\mp\zombies\_zm_stats::set_global_stat( a_stat[i], 0 );
+			player maps\mp\zombies\_zm_stats::set_global_stat( a_stat_nav_held[i], 0 );
+			player maps\mp\zombies\_zm_stats::set_global_stat( a_stat_nav[i], 0 );
+		}
+	}
+
+    [[getfunction("maps/mp/zm_buried_sq", "sq_metagame_clear_lights")]]();
+
+	if ( is_orange_on )
+		level notify( "end_game_reward_starts_maxis" );
+	else
+		level notify( "end_game_reward_starts_richtofen" );
 }
