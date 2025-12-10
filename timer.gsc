@@ -753,8 +753,11 @@ upgrades_bank()
     else
     {
         if(IS_DIE_RISE) self player_rig_fridge("svu_upgraded_zm+vzoom");
-        if(IS_BURIED && IS_SOLO) self player_rig_fridge("tar21_upgraded_zm+mms");
-        else self player_rig_fridge("mp5k_upgraded_zm");
+        if(IS_BURIED)
+        {
+            if(IS_SOLO) self player_rig_fridge("tar21_upgraded_zm+mms");
+            else self player_rig_fridge("mp5k_upgraded_zm");
+        }
     }
 
     flag_wait("initial_blackscreen_passed");
