@@ -1,4 +1,4 @@
-#define VERSION "V5.2"
+#define VERSION "6.0"
 #define CFG_FILE "T6EE/T6EE.cfg"
 #define TIMER_FILE "T6EE/T6EE.dat"
 #define STATS_FILE "T6EE/T6EE.stats"
@@ -36,6 +36,8 @@ init()
     else
         write_config(); //create default cfg file
 
+    flag_init("timer_end");
+    flag_init("timer_start");
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
     level.T6EE_Y_OFFSET = -34;
@@ -45,14 +47,8 @@ init()
     level.T6EE_SUPER_TIMING = int(level.T6EE_CFG["super_timing"]);
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
 
-    flag_init("timer_end");
-    flag_init("timer_start");
-    if(level.T6EE_HUD) //HUD off → prevent conflict with other scripts
-    {
-        thread overflow_manager();
-        thread precache_hud_strings();
-    }
-
+    thread precache_hud_strings();
+    thread overflow_manager();
     thread madeup_replaces();
     thread setup_start_data();
     thread on_player_connect();
@@ -124,7 +120,6 @@ madeup_replaces()
 
         if(IS_BURIED)
         {
-            //replacefunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_start_wisp"), ::ctw_max_start_wisp);
             replacefunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_fail_watch"), ::replace_ctw_max_fail_watch);
             replacefunc(getfunction("maps/mp/zm_buried_sq_tpo", "_are_all_players_in_time_bomb_volume"), ::replace_are_all_players_in_time_bomb_volume);
             replacefunc(getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_set_current_bulb"), ::replace_sq_bp_set_current_bulb);
@@ -329,9 +324,15 @@ handle_chat_commands()
 
         switch(tolower(message))
         {
+            case "anticheat":
+                status = getdvarint("EE_anticheat");
+                setdvar("EE_anticheat", !status);
+                iprintln("Anticheat " + (status ? "^2enabled" : "^1disabled"));
+                break;
+
             case "madeup":
                 status = toggle_setting("madeup");
-                iprintln("Any player EE scripts " + (!status ? "^2enabled" : "^1disabled"));
+                iprintln("Any player EE scripts " + (status ? "^2enabled" : "^1disabled"));
                 break;
 
             case "tank":
@@ -695,10 +696,90 @@ wait_for_split(split)
 
 run_anticheat()
 {
-    setdvar("cg_flashScriptHashes", 1);
-    setdvar("cg_drawIdentifier", 1);
-    flag_wait("timer_end");
-    cmdexec("flashScriptHashes");
+    wait 0.10; // make sure dvar cheat hud element is alive
+    set_dvar_if_unset("EE_anticheat", 1);
+    if(getDvarInt("EE_anticheat"))
+    {
+        level.T6EE_RESTRICTED_DVARS = [];
+        flag_wait("initial_players_connected");
+        add_restricted_dvar_value( "cg_flashScriptHashes", 1 );
+        add_restricted_dvar_value( "cg_drawIdentifier", 1 );
+        add_restricted_dvar_value( "g_speed", 190 );
+        add_restricted_dvar_value( "g_gravity", 800 );
+        add_restricted_dvar_value( "sv_cheats", 0 );
+        add_restricted_dvar_range( "sv_clientFpsLimit", 20, 250, 90);
+        //add_restricted_dvar_range( "com_maxfps", 20, 250); not needed with clientFpsLimi
+        //add_restricted_dvar_range( "cg_fov", 0, 120); not really working
+
+        level thread dvar_monitor();
+
+        flag_wait("timer_end");
+        cmdexec("flashScriptHashes");
+    }
+    else
+    {
+        setdvar("cg_flashScriptHashes", 0);
+        setdvar("cg_drawIdentifier", 0);
+        flag_wait("initial_blackscreen_passed");
+        iprintln("Anticheat - ^1Disabled");
+    }
+}
+
+dvar_monitor()
+{
+    while (true)
+    {
+        level waittill ("dvar_changed", dvar, new, old);
+
+        dvar = tolower(dvar);
+        data = level.T6EE_RESTRICTED_DVARS[dvar];
+        parsed = float(new);
+
+        if (data.range == 0)
+        {
+            if (parsed != data.value)
+            {
+                level.cheat_display.alpha = 1;
+                level.cheat_display set_safe_text(level.cheat_display.text_string + "\n" + toupper(dvar) + " " + parsed);
+            }
+        }
+        else if (data.range == 1)
+        {
+            if (parsed < data.min || parsed > data.max)
+            {
+                level.cheat_display.alpha = 1;
+                level.cheat_display set_safe_text(level.cheat_display.text_string + "\n" + toupper(dvar) + " " + parsed);
+            }
+        }
+    }
+}
+
+
+add_restricted_dvar_value( dvar_in, value )
+{
+    dvar = tolower(dvar_in);
+    level.T6EE_RESTRICTED_DVARS[dvar] = spawnStruct();
+    level.T6EE_RESTRICTED_DVARS[dvar].string = dvar;
+    level.T6EE_RESTRICTED_DVARS[dvar].range = 0;
+    level.T6EE_RESTRICTED_DVARS[dvar].value = value;
+    setdvar(dvar, value);
+    enableDvarChangedNotify(dvar);
+}
+
+add_restricted_dvar_range( dvar_in, min, max, normal)
+{
+    dvar = tolower(dvar_in);
+    level.T6EE_RESTRICTED_DVARS[dvar] = spawnStruct();
+    level.T6EE_RESTRICTED_DVARS[dvar].string = dvar;
+    level.T6EE_RESTRICTED_DVARS[dvar].range = 1;
+    level.T6EE_RESTRICTED_DVARS[dvar].min = min;
+    level.T6EE_RESTRICTED_DVARS[dvar].max = max;
+    val = getdvarfloat(dvar);
+    if(val < min || val > max)
+    {
+        setdvar(dvar, normal);
+    }
+    enableDvarChangedNotify(dvar);
 }
 
 set_strafe_speed( use_console )
@@ -945,12 +1026,27 @@ overflow_manager()
 {
     level endon("game_ended");
 	level endon("host_migration_begin");
-    flag_wait("timer_start");
+    flag_wait("initial_players_connected");
 
     // all strings allocated after this will be periodically removed
     level.overflow = newhudelem();
     level.overflow setText("overflow");
     level.overflow.alpha = 0;
+
+    level.cheat_display = newhudelem();
+    level.cheat_display.sort = 2000;
+    level.cheat_display.alignx = "center";
+    level.cheat_display.aligny = "top";
+    level.cheat_display.horzalign = "center"; // user_left respects aspect ratio
+    level.cheat_display.vertalign = "top";
+    level.cheat_display.fontscale = 1.4;
+    level.cheat_display.hidewheninmenu = 0;
+    level.cheat_display.alpha = 0;
+    level.cheat_display.color = (1, 0, 0);
+    level.cheat_display.glowcolor = (1, 1, 1);
+    level.cheat_display set_safe_text("ILLEGAL DVAR CHANGE");
+
+
 
     level.string_count = 0;
     max_string_count = 50;
@@ -974,6 +1070,8 @@ overflow_manager()
             {
                 level.T6EE_SUPER_HUD set_safe_text(level.T6EE_SUPER_HUD.split_string);
             }
+
+            level.cheat_display set_safe_text(level.cheat_display.text_string);
         }
     }
 }
