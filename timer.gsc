@@ -26,9 +26,16 @@
 #include maps\mp\gametypes_zm\_hud_util;
 #include common_scripts\utility;
 
-init()
+main()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
+    thread madeup_replaces();
+}
+
+init()
+{
+
+    if(isdefined(level.oprac_version) && (getDvar("o_menu_gamemode") != "fullgame")) return; //Don't run on oprac modes
     setdvar("scr_allowFileIo", 1);
     init_default_config();
     if(fs_testfile(CFG_FILE))
@@ -50,7 +57,6 @@ init()
 
     thread precache_hud_strings();
     thread overflow_manager();
-    thread madeup_replaces();
     thread setup_start_data();
     thread on_player_connect();
     thread verify_network_frame();
