@@ -45,6 +45,7 @@ init()
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
     level.T6EE_STATS_ACTIVE = int(level.T6EE_CFG["show_stats"]);
     level.T6EE_SUPER_TIMING = int(level.T6EE_CFG["super_timing"]);
+    level.managed_text_huds = [];
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
 
     thread precache_hud_strings();
@@ -67,14 +68,14 @@ init()
 
     if((level.T6EE_HUD) && level.non_first_super_map)
     {
-        level.T6EE_SUPER_HUD = newhudelem();
+        level.T6EE_SUPER_HUD = create_tracked_hud();
         level.T6EE_SUPER_HUD thread super_timer();
     }
 
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
     {
         level.T6EE_SPLIT[split] = spawnstruct();
-        if(level.T6EE_HUD) level.T6EE_SPLIT[split].timer = newhudelem();
+        if(level.T6EE_HUD) level.T6EE_SPLIT[split].timer = create_tracked_hud();
         level.T6EE_SPLIT[split] process_split();
         wait 0.05;
     }
@@ -1022,6 +1023,22 @@ set_safe_text(text)
 	self setText(text);
 }
 
+set_text_no_notify(text)
+{
+	level.string_count += 1;
+
+    // Notify overflow monitor on setText
+    self.text_string = text;
+	self setText(text);
+}
+
+create_tracked_hud()
+{
+    hud = newhudelem();
+    level.managed_text_huds[level.managed_text_huds.size] = hud;
+    return hud;
+}
+
 overflow_manager()
 {
     level endon("game_ended");
@@ -1033,7 +1050,7 @@ overflow_manager()
     level.overflow setText("overflow");
     level.overflow.alpha = 0;
 
-    level.cheat_display = newhudelem();
+    level.cheat_display = create_tracked_hud();
     level.cheat_display.sort = 2000;
     level.cheat_display.alignx = "center";
     level.cheat_display.aligny = "top";
@@ -1045,8 +1062,6 @@ overflow_manager()
     level.cheat_display.color = (1, 0, 0);
     level.cheat_display.glowcolor = (1, 1, 1);
     level.cheat_display set_safe_text("ILLEGAL DVAR CHANGE");
-
-
 
     level.string_count = 0;
     max_string_count = 50;
@@ -1060,18 +1075,11 @@ overflow_manager()
             level.overflow ClearAllTextAfterHudElem();
             level.string_count = 0;
 
-            foreach(elem in level.T6EE_SPLIT)
+            foreach(elem in level.managed_text_huds)
             {
-                if(isdefined(elem.timer))
-                    elem.timer set_safe_text(elem.split_string);
+                if(isdefined(elem))
+                    elem set_text_no_notify(elem.text_string); // or split_string if applicable
             }
-
-            if(isdefined(level.T6EE_SUPER_HUD))
-            {
-                level.T6EE_SUPER_HUD set_safe_text(level.T6EE_SUPER_HUD.split_string);
-            }
-
-            level.cheat_display set_safe_text(level.cheat_display.text_string);
         }
     }
 }
