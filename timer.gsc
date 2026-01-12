@@ -30,7 +30,6 @@ init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
     if(isdefined(level.oprac_version) && (getDvar("o_menu_gamemode") != "fullgame")) return; //Don't run on oprac modes
-    setdvar("scr_allowFileIo", 1);
     init_default_config();
     if(fs_testfile(CFG_FILE))
         read_config();  //read cfg file if exists
@@ -109,7 +108,7 @@ super_timer()
 {
     self.sort = 2000;
     self.alignx = "left";
-    self.aligny = "center";
+    self.aligny = "middle";
     self.horzalign = "user_left"; // user_left respects aspect ratio
     self.vertalign = "top";
     self.x = TIMER_X_OFFSET;
@@ -274,7 +273,7 @@ draw_client_split( index )
 {
     self.sort = 2000;
     self.alignx = "left";
-    self.aligny = "center";
+    self.aligny = "middle";
     self.horzalign = "user_left"; // user_left respects aspect ratio
     self.vertalign = "top";
     self.x = TIMER_X_OFFSET;
@@ -377,7 +376,7 @@ speedometer()
     self.speedometer = createfontstring("default" , 1.4);
     self.speedometer.alpha = 0.8;
     self.speedometer.hidewheninmenu = 1;
-    self.speedometer setpoint("CENTER", "CENTER", "CENTER", 190);
+    self.speedometer setpoint("CENTER", "CENTER", 0, 190);
 
     while (true)
     {
@@ -433,7 +432,7 @@ timer_start_wait()
     level thread game_start_check();
     if(IS_MOB) level thread mob_start_check();
     flag_wait("timer_start");
-
+    waittillframeend;
 }
 
 game_start_check()
@@ -789,6 +788,8 @@ add_restricted_dvar_string( dvar_in, string )
 upgrade_dvars()
 {
     if(!IS_VICTIS) return;
+    level.T6EE_upgrades = [];
+
     foreach(upgrade in level.pers_upgrades)
     {
         foreach(stat_name in upgrade.stat_names)
@@ -840,8 +841,8 @@ upgrades_bank()
     }
 
     flag_wait("initial_blackscreen_passed");
-    self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", level.bank_account_max, level.banking_map);
-    self.account_value = level.bank_account_max;
+    self maps\mp\zombies\_zm_stats::set_map_stat("depositBox", int(level.bank_account_max), level.banking_map);
+    self.account_value = int(level.bank_account_max);
 }
 
 player_rig_fridge(weapon)
@@ -853,26 +854,25 @@ player_rig_fridge(weapon)
     wpn["stock"] = weaponmaxammo(weapon);
     wpn["dw_name"] = weapondualwieldweaponname(weapon);
     wpn["alt_name"] = weaponaltweaponname(weapon);
-    wpn["lh_clip"] = weaponclipsize(wpn["dw_name"]);
-    wpn["alt_clip"] = weaponclipsize(wpn["alt_name"]);
-    wpn["alt_stock"] = weaponmaxammo(wpn["alt_name"]);
+    wpn["lh_clip"] = ( wpn["dw_name"] != "none" ) ? weaponclipsize(wpn["dw_name"]) : 0;
+
+    if ( wpn["alt_name"] != "none" )
+    {
+        wpn["alt_clip"] = weaponclipsize(wpn["alt_name"]);
+        wpn["alt_stock"] = weaponmaxammo(wpn["alt_name"]);
+    }
+    else
+    {
+        wpn["alt_clip"] = 0;
+        wpn["alt_stock"] = 0;
+    }
 
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "name", weapon);
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "clip", wpn["clip"]);
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "stock", wpn["stock"]);
-
-    if (isdefined(wpn["alt_name"]) && wpn["alt_name"] != "")
-    {
-        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_name", wpn["alt_name"]);
-        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_clip", wpn["alt_clip"]);
-        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_stock", wpn["alt_stock"]);
-    }
-
-    if (isdefined(wpn["dw_name"]) && wpn["dw_name"] != "")
-    {
-        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "dw_name", wpn["dw_name"]);
-        self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "lh_clip", wpn["lh_clip"]);
-    }
+    self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_clip", wpn["alt_clip"]);
+    self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_stock", wpn["alt_stock"]);
+    self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "lh_clip", wpn["lh_clip"]);
 }
 
 //Probably not needed anymore, safeguard for future pluto updates
@@ -1043,6 +1043,7 @@ overflow_manager()
     level.overflow = newhudelem();
     level.overflow setText("overflow");
     level.overflow.alpha = 0;
+    level.string_count = 0;
 
     level.cheat_display = create_tracked_hud();
     level.cheat_display.sort = 2000;
@@ -1057,7 +1058,6 @@ overflow_manager()
     level.cheat_display.glowcolor = (1, 1, 1);
     level.cheat_display set_safe_text("ILLEGAL DVAR CHANGE");
 
-    level.string_count = 0;
     max_string_count = 50;
 
     while(true)
