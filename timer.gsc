@@ -28,13 +28,13 @@
 
 main()
 {
-    if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
     thread madeup_replaces();
+    thread fov_clamp();
 }
 
 init()
 {
-
+    if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
     if(isdefined(level.oprac_version) && (getDvar("o_menu_gamemode") != "fullgame")) return; //Don't run on oprac modes
     setdvar("scr_allowFileIo", 1);
     init_default_config();
@@ -85,54 +85,6 @@ init()
     }
 
     flag_set("timer_end");
-}
-
-madeup_replaces()
-{
-    if(IS_MOB)
-    {
-        return;
-    }
-
-    if(IS_ORIGINS && int(level.T6EE_CFG["old_tank"]))
-    {
-        replacefunc(getfunction("maps/mp/zm_tomb_tank", "tank_push_player_off_edge"), ::replace_tank_push_player_off_edge);
-        return;
-    }
-
-    flag_wait("initial_players_connected");
-    navcard_set();
-    level.starting_player_count = level.players.size;
-
-    if(int(level.T6EE_CFG["madeup"]) && level.starting_player_count < 4)
-    {
-        if(IS_TRANZIT && IS_SOLO)
-        {
-            replacefunc(getfunction("maps/mp/zm_transit_sq", "maxis_sidequest_b"), ::replace_maxis_sidequest_b);
-            replacefunc(getfunction("maps/mp/zm_transit_sq", "get_how_many_progressed_from"), ::replace_get_how_many_progressed_from);
-        }
-
-        if(IS_DIE_RISE)
-        {
-            replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_elevators"), ::replace_sq_atd_elevators);
-            replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_drg_puzzle"), ::replace_sq_atd_drg_puzzle);
-            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "wait_for_all_springpads_placed"), ::replace_wait_for_all_springpads_placed);
-            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_player_create_trigs"), ::replace_pts_should_player_create_trigs);
-            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_springpad_create_trigs"), ::replace_pts_should_springpad_create_trigs);
-            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_create_for_spot"), ::replace_pts_putdown_trigs_create_for_spot);
-            replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "place_ball_think"), ::replace_place_ball_think);
-        }
-
-        if(IS_BURIED)
-        {
-            replacefunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_fail_watch"), ::replace_ctw_max_fail_watch);
-            replacefunc(getfunction("maps/mp/zm_buried_sq_tpo", "_are_all_players_in_time_bomb_volume"), ::replace_are_all_players_in_time_bomb_volume);
-            replacefunc(getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_set_current_bulb"), ::replace_sq_bp_set_current_bulb);
-            replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_target_delete_timer"), ::replace_ows_target_delete_timer);
-            replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_targets_start"), ::replace_ows_targets_start);
-            replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "sq_metagame"), ::replace_sq_metagame);
-        }
-    }
 }
 
 on_player_connect()
@@ -698,6 +650,7 @@ run_anticheat()
 
         //Value dvars
         add_restricted_dvar_value( "bg_allowJumpPlanting", 0 );
+        add_restricted_dvar_value( "bg_gravity", 800 );
         add_restricted_dvar_value( "bg_burstFireInputFix", 0 );
         add_restricted_dvar_value( "bg_chargeShotAllowChargingWithoutRepress", 0 );
         add_restricted_dvar_value( "bg_chargeShotEmptyFire", 0 );
@@ -1244,6 +1197,39 @@ game_time_string(time)
 	return time_string;
 }
 
+madeup_replaces()
+{
+    //tranzit
+    replacefunc(getfunction("maps/mp/zm_transit_sq", "maxis_sidequest_b"), ::replace_maxis_sidequest_b);
+    replacefunc(getfunction("maps/mp/zm_transit_sq", "get_how_many_progressed_from"), ::replace_get_how_many_progressed_from);
+
+    //die rise
+    replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_elevators"), ::replace_sq_atd_elevators);
+    replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_drg_puzzle"), ::replace_sq_atd_drg_puzzle);
+    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "wait_for_all_springpads_placed"), ::replace_wait_for_all_springpads_placed);
+    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_player_create_trigs"), ::replace_pts_should_player_create_trigs);
+    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_springpad_create_trigs"), ::replace_pts_should_springpad_create_trigs);
+    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_create_for_spot"), ::replace_pts_putdown_trigs_create_for_spot);
+    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "place_ball_think"), ::replace_place_ball_think);
+
+    //buried
+    replacefunc(getfunction("maps/mp/zm_buried_sq", "sq_metagame"), ::replace_sq_metagame);
+    replaceFunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_wisp_enery_watch"), ::replace_ctw_max_wisp_enery_watch );
+    replacefunc(getfunction("maps/mp/zm_buried_sq_tpo", "_are_all_players_in_time_bomb_volume"), ::replace_are_all_players_in_time_bomb_volume);
+    replacefunc(getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_set_current_bulb"), ::replace_sq_bp_set_current_bulb);
+    replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_target_delete_timer"), ::replace_ows_target_delete_timer);
+    replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_targets_start"), ::replace_ows_targets_start);
+
+    flag_wait("initial_players_connected");
+    flag_set( "sq_intro_vo_done" );
+    navcard_set();
+    level.starting_player_count = level.players.size;
+
+    level waittill( "power_on" );
+    wait 10;
+    level notify( "buried_sidequest_achieved" );
+}
+
 /* ===================================NAV CARDS================================================= */
 navcard_set()
 {
@@ -1511,21 +1497,6 @@ replace_are_all_players_in_time_bomb_volume( e_volume )
 	return n_players_in_position == a_players.size;;
 }
 
-replace_ctw_max_fail_watch()
-{
-    self endon( "death" );
-
-    do
-    {
-        wait 1;
-        n_starter_dist = distancesquared( self.origin, level.e_sq_sign_attacker.origin );
-    }
-    while (n_starter_dist < 262144 );
-
-    level thread[[getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_fail_vo")]]();
-    flag_set( "sq_wisp_failed" );
-}
-
 replace_sq_bp_set_current_bulb( str_tag )
 {
 	level endon( "sq_bp_correct_button" );
@@ -1543,6 +1514,18 @@ replace_sq_bp_set_current_bulb( str_tag )
 		wait 10;
 		level notify( "sq_bp_timeout" );
 	}
+}
+
+replace_ctw_max_wisp_enery_watch()
+{
+    self endon( "death" );
+
+    while ( true )
+    {
+        self.n_sq_energy = self.n_sq_max_energy;
+        wait 1;
+    }
+
 }
 
 replace_ows_target_delete_timer()
@@ -1596,7 +1579,6 @@ sharpshooter_allowed_misses()
 		default: return 0; //All targets
 	}
 }
-
 
 //Super EE reward button
 replace_sq_metagame()
@@ -1718,4 +1700,66 @@ replace_sq_metagame()
 		level notify( "end_game_reward_starts_maxis" );
 	else
 		level notify( "end_game_reward_starts_richtofen" );
+}
+
+
+//////////////////////// FOV CLAMPING
+
+fov_clamp()
+{
+    replacefunc(getfunction("maps/mp/zm_tomb_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+    replacefunc(getfunction("maps/mp/zm_transit_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+    replacefunc(getfunction("maps/mp/zm_alcatraz_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+    replacefunc(getfunction("maps/mp/zm_highrise_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+    replacefunc(getfunction("maps/mp/zm_buried_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+    replacefunc(getfunction("maps/mp/zombies/_zm_ai_faller", "in_player_fov"), ::ai_faller_in_player_fov);
+}
+
+clamped_player_can_see_me( player )
+{
+    playerangles = player getplayerangles();
+    playerforwardvec = anglestoforward( playerangles );
+    playerunitforwardvec = vectornormalize( playerforwardvec );
+    banzaipos = self.origin;
+    playerpos = player getorigin();
+    playertobanzaivec = banzaipos - playerpos;
+    playertobanzaiunitvec = vectornormalize( playertobanzaivec );
+    forwarddotbanzai = vectordot( playerunitforwardvec, playertobanzaiunitvec );
+
+    if ( forwarddotbanzai >= 1 )
+        anglefromcenter = 0;
+    else if ( forwarddotbanzai <= -1 )
+        anglefromcenter = 180;
+    else
+        anglefromcenter = acos( forwarddotbanzai );
+
+    playerfov = min(90.0, getdvarfloat( #"cg_fov" ));
+    banzaivsplayerfovbuffer = getdvarfloat( #"g_banzai_player_fov_buffer" );
+
+    if ( banzaivsplayerfovbuffer <= 0 )
+        banzaivsplayerfovbuffer = 0.2;
+
+    playercanseeme = anglefromcenter <= playerfov * 0.5 * ( 1 - banzaivsplayerfovbuffer );
+    return playercanseeme;
+}
+
+ai_faller_in_player_fov( player )
+{
+    playerangles = player getplayerangles();
+    playerforwardvec = anglestoforward( playerangles );
+    playerunitforwardvec = vectornormalize( playerforwardvec );
+    banzaipos = self.origin;
+    playerpos = player getorigin();
+    playertobanzaivec = banzaipos - playerpos;
+    playertobanzaiunitvec = vectornormalize( playertobanzaivec );
+    forwarddotbanzai = vectordot( playerunitforwardvec, playertobanzaiunitvec );
+    anglefromcenter = acos( forwarddotbanzai );
+    playerfov = min(90.0, getdvarfloat( #"cg_fov" ));
+    banzaivsplayerfovbuffer = getdvarfloat( #"g_banzai_player_fov_buffer" );
+
+    if ( banzaivsplayerfovbuffer <= 0 )
+        banzaivsplayerfovbuffer = 0.2;
+
+    inplayerfov = anglefromcenter <= playerfov * 0.5 * ( 1 - banzaivsplayerfovbuffer );
+    return inplayerfov;
 }
