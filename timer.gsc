@@ -1079,7 +1079,7 @@ overflow_manager()
 {
     level endon("game_ended");
 	level endon("host_migration_begin");
-    flag_wait("initial_players_connected");
+    flag_wait("initial_blackscreen_passed");
 
     // all strings allocated after this will be periodically removed
     level.overflow = newhudelem();
