@@ -1222,15 +1222,6 @@ navcard_set()
 	}
 }
 
-/* =============================================================================================  */
-/*                                  ORIGINS FUNCTION OVERRIDES                                    */
-/* =============================================================================================  */
-
-replace_tank_push_player_off_edge()
-{
-    return;
-}
-
 /* =============================================================== */
 /* The functions below are an independent implementation           */
 /* that emulates the behavior of the scripts found at:             */
