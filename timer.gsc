@@ -337,16 +337,6 @@ handle_chat_commands()
                 iprintln("Anticheat " + (status ? "^2enabled" : "^1disabled"));
                 break;
 
-            case "madeup":
-                status = toggle_setting("madeup");
-                iprintln("Any player EE scripts " + (status ? "^2enabled" : "^1disabled"));
-                break;
-
-            case "tank":
-                status = toggle_setting("old_tank");
-                iprintln("Tank push trigger " + (!status ? "^2normal" : "^1removed"));
-                break;
-
             case "super":
                 status = toggle_setting("super_timing");
                 iprintln("Super timing " + (status ? "^2enabled" : "^1disabled"));
@@ -911,11 +901,9 @@ init_default_config()
     level.T6EE_CFG["hud_timer"]         = 1;
     level.T6EE_CFG["hud_speed"]         = 1;
     level.T6EE_CFG["show_stats"]        = 1;
-    level.T6EE_CFG["madeup"]            = 1;
 
     level.T6EE_CFG["console_strafe"]    = 0;
     level.T6EE_CFG["super_timing"]      = 0;
-    level.T6EE_CFG["old_tank"]          = 0;
 }
 
 read_config()
