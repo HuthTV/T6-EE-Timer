@@ -67,8 +67,6 @@ init()
     thread game_over_wait();
 
     if(level.T6EE_STATS_ACTIVE) thread stats_tracking();
-    set_strafe_speed( int(level.T6EE_CFG["console_strafe"]) );
-
     timer_start_wait();
     level.T6EE_SPLIT = [];
 
@@ -350,12 +348,6 @@ handle_chat_commands()
             case "timer":
                 status = toggle_setting("hud_timer");
                 iprintln("HUD Timer " + (status ? "^2enabled" : "^1disabled") + "^7 - use ^3fast_restart");
-                break;
-
-            case "strafe":
-                status = toggle_setting("console_strafe");
-                set_strafe_speed(status);
-                iprintln("Strafe speeds - " + (status ? "^1Console" : "^2PC"));
                 break;
 
             case "speed":
@@ -699,14 +691,52 @@ run_anticheat()
     {
         level.T6EE_RESTRICTED_DVARS = [];
         flag_wait("initial_players_connected");
-        add_restricted_dvar_value( "cg_flashScriptHashes", 1 );
+
+        //Range dvars
+        add_restricted_dvar_range( "sv_clientFpsLimit", 20, 250, 90 );
+        add_restricted_dvar_range( "cg_fov", 65, 90, 90 );
+
+        //Value dvars
+        add_restricted_dvar_value( "bg_allowJumpPlanting", 0 );
+        add_restricted_dvar_value( "bg_burstFireInputFix", 0 );
+        add_restricted_dvar_value( "bg_chargeShotAllowChargingWithoutRepress", 0 );
+        add_restricted_dvar_value( "bg_chargeShotEmptyFire", 0 );
+        add_restricted_dvar_value( "bg_chargeShotPreventChargingWhileNotReady", 0 );
+        add_restricted_dvar_value( "bg_fixFramerateDependentPhysics", 0 );
+        add_restricted_dvar_value( "bg_forceMinePlant", 0 );
+        add_restricted_dvar_value( "bg_jetgun_disable_z_thrust", 0 );
+        add_restricted_dvar_value( "bg_jetgun_fix_spin", 0 );
+        add_restricted_dvar_value( "bg_jetgun_prevent_spin_while_not_ready", 0 );
+        add_restricted_dvar_value( "bg_minigun_disable_ads_spin", 0 );
+        add_restricted_dvar_value( "bg_minigun_prevent_spin_while_not_ready", 0 );
+        add_restricted_dvar_value( "bullet_penetration_affected_by_team", 1 );
         add_restricted_dvar_value( "cg_drawIdentifier", 1 );
-        add_restricted_dvar_value( "g_speed", 190 );
+        add_restricted_dvar_value( "cg_flashScriptHashes", 1 );
+        add_restricted_dvar_value( "cg_weaponCycleDelay", 0 );
+        add_restricted_dvar_value( "cl_fix_25day_blackscreen", 0 );
+        add_restricted_dvar_value( "g_fix_entity_leaks", 0 );
+        add_restricted_dvar_value( "g_fixBulletDamageDupe", 0 );
         add_restricted_dvar_value( "g_gravity", 800 );
+        add_restricted_dvar_value( "g_speed", 190 );
+        add_restricted_dvar_value( "g_zm_fix_damage_overflow", 0 );
+        add_restricted_dvar_value( "perk_weapRateEnhanced", 1 );
+        add_restricted_dvar_value( "perk_weapSpreadAds", 0 );
+        add_restricted_dvar_value( "player_allowActivateWhileSwitchingWeapons", 0 );
+        add_restricted_dvar_value( "player_sprintFix", 0 );
+        add_restricted_dvar_value( "player_sprintunlimited", 0 );
+        add_restricted_dvar_value( "player_sustainammo", 0 );
+        add_restricted_dvar_value( "snd_debug", 0 );
         add_restricted_dvar_value( "sv_cheats", 0 );
-        add_restricted_dvar_range( "sv_clientFpsLimit", 20, 250, 90);
-        //add_restricted_dvar_range( "com_maxfps", 20, 250); not needed with clientFpsLimi
-        //add_restricted_dvar_range( "cg_fov", 0, 120); not really working
+        add_restricted_dvar_value( "cg_fovmin", 10 );
+        add_restricted_dvar_value( "cg_fovScale", 1 );
+        add_restricted_dvar_value( "sv_rateBoostingForce", 0 );
+        add_restricted_dvar_value( "g_playerCollision", 0 );
+        add_restricted_dvar_value( "g_playerEjection", 0 );
+        add_restricted_dvar_value( "player_backSpeedScale", 0.7 );
+        add_restricted_dvar_value( "player_strafeSpeedScale", 0.8 );
+
+        //String dvars
+        add_restricted_dvar_string( "snd_debug_alias_filter", "" );
 
         level thread dvar_monitor();
 
@@ -730,34 +760,42 @@ dvar_monitor()
 
         dvar = tolower(dvar);
         data = level.T6EE_RESTRICTED_DVARS[dvar];
-        parsed = float(new);
 
-        if (data.range == 0)
+        if(data.type == "value")
         {
+            parsed = float(new);
             if (parsed != data.value)
             {
                 level.cheat_display.alpha = 1;
                 level.cheat_display set_safe_text(level.cheat_display.text_string + "\n" + toupper(dvar) + " " + parsed);
             }
         }
-        else if (data.range == 1)
+        else if(data.type == "range")
         {
+            parsed = float(new);
             if (parsed < data.min || parsed > data.max)
             {
                 level.cheat_display.alpha = 1;
                 level.cheat_display set_safe_text(level.cheat_display.text_string + "\n" + toupper(dvar) + " " + parsed);
             }
         }
+        else if(data.type == "string")
+        {
+            if(new != data.value)
+            {
+                level.cheat_display.alpha = 1;
+                level.cheat_display set_safe_text(level.cheat_display.text_string + "\n" + toupper(dvar) + " " + toupper(new));
+            }
+        }
     }
 }
-
 
 add_restricted_dvar_value( dvar_in, value )
 {
     dvar = tolower(dvar_in);
     level.T6EE_RESTRICTED_DVARS[dvar] = spawnStruct();
     level.T6EE_RESTRICTED_DVARS[dvar].string = dvar;
-    level.T6EE_RESTRICTED_DVARS[dvar].range = 0;
+    level.T6EE_RESTRICTED_DVARS[dvar].type = "value";
     level.T6EE_RESTRICTED_DVARS[dvar].value = value;
     setdvar(dvar, value);
     enableDvarChangedNotify(dvar);
@@ -768,7 +806,7 @@ add_restricted_dvar_range( dvar_in, min, max, normal)
     dvar = tolower(dvar_in);
     level.T6EE_RESTRICTED_DVARS[dvar] = spawnStruct();
     level.T6EE_RESTRICTED_DVARS[dvar].string = dvar;
-    level.T6EE_RESTRICTED_DVARS[dvar].range = 1;
+    level.T6EE_RESTRICTED_DVARS[dvar].type = "range";
     level.T6EE_RESTRICTED_DVARS[dvar].min = min;
     level.T6EE_RESTRICTED_DVARS[dvar].max = max;
     val = getdvarfloat(dvar);
@@ -779,10 +817,15 @@ add_restricted_dvar_range( dvar_in, min, max, normal)
     enableDvarChangedNotify(dvar);
 }
 
-set_strafe_speed( use_console )
+add_restricted_dvar_string( dvar_in, string )
 {
-    setDvar("player_backSpeedScale", 0.7 + (0.3 * use_console));
-    setDvar("player_strafeSpeedScale", 0.8 + (0.2 * use_console));
+    dvar = tolower(dvar_in);
+    level.T6EE_RESTRICTED_DVARS[dvar] = spawnStruct();
+    level.T6EE_RESTRICTED_DVARS[dvar].string = dvar;
+    level.T6EE_RESTRICTED_DVARS[dvar].type = "string";
+    level.T6EE_RESTRICTED_DVARS[dvar].value = string;
+    setdvar(dvar, string);
+    enableDvarChangedNotify(dvar);
 }
 
 upgrade_dvars()
@@ -902,7 +945,6 @@ init_default_config()
     level.T6EE_CFG["hud_speed"]         = 1;
     level.T6EE_CFG["show_stats"]        = 1;
 
-    level.T6EE_CFG["console_strafe"]    = 0;
     level.T6EE_CFG["super_timing"]      = 0;
 }
 
