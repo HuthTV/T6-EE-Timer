@@ -819,14 +819,14 @@ upgrades_bank()
 
     if(level.T6EE_SUPER_TIMING) //Only set super guns on die rise
     {
-         //Assumed tranzit fridge is never used
+        //Assumed tranzit fridge is never used
         //Don't clear if player left gun in die rise
         if(!IS_BURIED) self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
-        if(IS_DIE_RISE) self player_rig_fridge("svu_upgraded_zm+vzoom");
+        if(IS_DIE_RISE) self player_rig_fridge("svu_zm");
     }
     else
     {
-        if(IS_DIE_RISE) self player_rig_fridge("svu_upgraded_zm+vzoom");
+        if(IS_DIE_RISE) self player_rig_fridge("svu_zm");
         if(IS_BURIED)
         {
             if(IS_SOLO) self player_rig_fridge("tar21_upgraded_zm+mms");
