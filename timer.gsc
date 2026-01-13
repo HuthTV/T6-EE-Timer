@@ -693,8 +693,8 @@ run_anticheat()
         flag_wait("initial_players_connected");
 
         //Range dvars
-        add_restricted_dvar_range( "sv_clientFpsLimit", 20, 250, 90 );
         add_restricted_dvar_range( "cg_fov", 65, 90, 90 );
+        add_restricted_dvar_range( "sv_clientFpsLimit", 20, 250, 90 );
 
         //Value dvars
         add_restricted_dvar_value( "bg_allowJumpPlanting", 0 );
@@ -712,28 +712,28 @@ run_anticheat()
         add_restricted_dvar_value( "bullet_penetration_affected_by_team", 1 );
         add_restricted_dvar_value( "cg_drawIdentifier", 1 );
         add_restricted_dvar_value( "cg_flashScriptHashes", 1 );
+        add_restricted_dvar_value( "cg_fovmin", 10 );
+        add_restricted_dvar_value( "cg_fovScale", 1 );
         add_restricted_dvar_value( "cg_weaponCycleDelay", 0 );
         add_restricted_dvar_value( "cl_fix_25day_blackscreen", 0 );
         add_restricted_dvar_value( "g_fix_entity_leaks", 0 );
         add_restricted_dvar_value( "g_fixBulletDamageDupe", 0 );
         add_restricted_dvar_value( "g_gravity", 800 );
+        add_restricted_dvar_value( "g_playerCollision", 0 );
+        add_restricted_dvar_value( "g_playerEjection", 0 );
         add_restricted_dvar_value( "g_speed", 190 );
         add_restricted_dvar_value( "g_zm_fix_damage_overflow", 0 );
         add_restricted_dvar_value( "perk_weapRateEnhanced", 1 );
         add_restricted_dvar_value( "perk_weapSpreadAds", 0 );
         add_restricted_dvar_value( "player_allowActivateWhileSwitchingWeapons", 0 );
+        add_restricted_dvar_value( "player_backSpeedScale", 0.7 );
         add_restricted_dvar_value( "player_sprintFix", 0 );
         add_restricted_dvar_value( "player_sprintunlimited", 0 );
+        add_restricted_dvar_value( "player_strafeSpeedScale", 0.8 );
         add_restricted_dvar_value( "player_sustainammo", 0 );
         add_restricted_dvar_value( "snd_debug", 0 );
         add_restricted_dvar_value( "sv_cheats", 0 );
-        add_restricted_dvar_value( "cg_fovmin", 10 );
-        add_restricted_dvar_value( "cg_fovScale", 1 );
         add_restricted_dvar_value( "sv_rateBoostingForce", 0 );
-        add_restricted_dvar_value( "g_playerCollision", 0 );
-        add_restricted_dvar_value( "g_playerEjection", 0 );
-        add_restricted_dvar_value( "player_backSpeedScale", 0.7 );
-        add_restricted_dvar_value( "player_strafeSpeedScale", 0.8 );
 
         //String dvars
         add_restricted_dvar_string( "snd_debug_alias_filter", "" );
