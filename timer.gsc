@@ -54,7 +54,6 @@ init()
 
     thread madeup_replaces();
     thread run_anticheat();
-    thread fov_clamp();
     thread precache_hud_strings();
     thread overflow_manager();
     thread setup_start_data();
@@ -64,6 +63,7 @@ init()
     thread setup_splits_and_labels();
     thread handle_chat_commands();
     thread game_over_wait();
+    //thread fov_clamp(); not requred, implemented just incase
 
     if(level.T6EE_STATS_ACTIVE) thread stats_tracking();
     timer_start_wait();
