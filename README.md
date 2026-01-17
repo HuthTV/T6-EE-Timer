@@ -52,17 +52,17 @@ Various commands are available to enter straight into the game chat, found in ta
 Players can initiate a fast restart by typing `r`, `restart`, or `fast_restart` in the game chat. To simplify restarts, players can bind a key to the say command. For example, `bind F2 say restart` in the game console.
 
 ## 🚫 Anti Cheat
-To ensure fair play, several measures are in place to prevent players from gaining an unfair advantage through dvars or loaded scripts. The timer will automatically activate `cg_flashScriptHashes` and `cg_drawIdentifier` and execute the `flashScriptHashes` command at the start and end of each run. Additionally, a dvar monitor runs continuously, tracking any changes to hosts dvar values. If a value falls outside the allowed range, it will be clearly displayed on-screen. The full list of tracked dvars can be found [here]. Any illegal dvar values detected on map load will be automatically corrected before timing begins.
+To ensure fair play, several measures are in place to prevent players from gaining an unfair advantage through dvars or loaded scripts. The timer will automatically activate `cg_flashScriptHashes` and `cg_drawIdentifier` and execute the `flashScriptHashes` command at the start and end of each run. Additionally, a dvar monitor runs continuously, tracking any changes to hosts dvar values. If a value falls outside the allowed range, it will be clearly displayed on-screen. Any illegal dvar values detected on map load will be automatically corrected before timing begins. The full list of tracked dvars can be found [here](https://github.com/HuthTV/T6-EE-Timer/blob/r6.0/tracked_dvars.md)
 
 ## 🤡 Victis solo & Coop "madeup" scripts
 
-Certain maps normally require a minimum number of players to complete the Easter Egg. This timer includes “madeup” code that lets players complete the egg with fewer than the required number. The code emulates the behaviors found in this repository:[T6-Any-Player-EE-Scripts](https://github.com/Hadi77KSA/Plutonium-T6-Any-Player-EE-Scripts/blob/7d890242c2cf3f8741382d1c7d30eeedc7fe588d). For full details, check out the repos [readme](https://github.com/Hadi77KSA/Plutonium-T6-Any-Player-EE-Scripts/blob/7d890242c2cf3f8741382d1c7d30eeedc7fe588d/README.md). These “madeup” features can be disabeled via the `EE_madeup` dvar.
+Certain maps normally require a minimum number of players to complete the Easter Egg. This timer includes “madeup” code that lets players complete the egg with fewer than the required number. These “madeup” features can be disabeled via the `EE_madeup` dvar. The timer emulates the behaviors found in this repository: [T6-Any-Player-EE-Scripts](https://github.com/Hadi77KSA/Plutonium-T6-Any-Player-EE-Scripts/blob/7d890242c2cf3f8741382d1c7d30eeedc7fe588d). For full details, check out the repos [readme](https://github.com/Hadi77KSA/Plutonium-T6-Any-Player-EE-Scripts/blob/7d890242c2cf3f8741382d1c7d30eeedc7fe588d/README.md)
 
 ## 🧭 Super Easter Egg Timing
 Super Timing runs a single timer across all maps. Tranzit is unchanged, Die Rise and Buried will show the total time in-game. LiveSplit also won’t reset between maps. Buried has a super exlusive split for triggering the EE reward button after Sharpshooter.
 
 ## 🗄️ Fridge
-On Die Rise, an upgraded SVU will be placed in each player's fridge. On Buried (solo), a TAR-21 MMS will be placed in the player's fridge.
+On Die Rise, an SVU will be placed in each player's fridge. On Buried, a TAR-21 MMS will be placed for solo and upgraded mp5's for coop.
 
 ## ✨ Persistent Upgrades and Bank 
 Upon spawning, players will be awarded all persistent upgrades except Insta-Kill. The player's bank will also be set to the maximum amount. To change which upgrades are active, use the following boolean console DVARs to enable or disable specific upgrades.
