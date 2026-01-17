@@ -26,12 +26,6 @@
 #include maps\mp\gametypes_zm\_hud_util;
 #include common_scripts\utility;
 
-main()
-{
-    thread madeup_replaces();
-    thread fov_clamp();
-}
-
 init()
 {
     if(level.scr_zm_ui_gametype_group != "zclassic") return; //dont run on survival maps
@@ -55,12 +49,17 @@ init()
     level.managed_text_huds = [];
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
 
+    set_dvar_if_unset("EE_madeup", 1);
+    set_dvar_if_unset("EE_anticheat", 1);
+
+    thread madeup_replaces();
+    thread run_anticheat();
+    thread fov_clamp();
     thread precache_hud_strings();
     thread overflow_manager();
     thread setup_start_data();
     thread on_player_connect();
     thread verify_network_frame();
-    thread run_anticheat();
     thread upgrade_dvars();
     thread setup_splits_and_labels();
     thread handle_chat_commands();
@@ -271,6 +270,21 @@ split_refresh()
     if(!flag("game_over")) self.timer.color = TIMER_COMPLETE_COLOR;
 }
 
+draw_client_split( index )
+{
+    self.sort = 2000;
+    self.alignx = "left";
+    self.aligny = "center";
+    self.horzalign = "user_left"; // user_left respects aspect ratio
+    self.vertalign = "top";
+    self.x = TIMER_X_OFFSET;
+    self.y = level.T6EE_Y_OFFSET + (index * TIMER_Y_INCREMENT);
+    self.fontscale = 1.4;
+    self.hidewheninmenu = 0;
+    self.alpha = 0.8;
+    self.color = TIMER_ACTIVE_COLOR;
+}
+
 handle_chat_commands()
 {
     flag_wait("initial_blackscreen_passed");
@@ -282,9 +296,15 @@ handle_chat_commands()
         switch(tolower(message))
         {
             case "anticheat":
-                status = getdvarint("EE_anticheat");
-                setdvar("EE_anticheat", !status);
+                status = !getdvarint("EE_anticheat");
+                setdvar("EE_anticheat", status);
                 iprintln("Anticheat " + (status ? "^2enabled" : "^1disabled"));
+                break;
+
+            case "madeup":
+                status = !getdvarint("EE_madeup");
+                setdvar("EE_madeup", status);
+                iprintln("Madeup scripts " + (status ? "^2enabled" : "^1disabled"));
                 break;
 
             case "super":
@@ -349,6 +369,23 @@ toggle_setting(key)
     return new_val;
 }
 
+speedometer()
+{
+    self endon("kill_speedometer");
+    flag_wait("timer_start");
+
+    self.speedometer = createfontstring("default" , 1.4);
+    self.speedometer.alpha = 0.8;
+    self.speedometer.hidewheninmenu = 1;
+    self.speedometer setpoint("CENTER", "CENTER", "CENTER", 190);
+
+    while (true)
+    {
+        self set_speedometer_color();
+        wait 0.05;
+    }
+}
+
 set_speedometer_color()
 {
     velocity = int(length(self getvelocity() * (1, 1, 0))); //ignore vertical velocity
@@ -389,38 +426,6 @@ set_speedometer_color()
         self.speedometer.color = (1.0, 1.0 - 0.8 * rt, 0.6 - 0.6 * rt); // yellow -> red
         self.speedometer.glowcolor = (0.7, 0.7 - 0.6 * rt, 0.4 - 0.4 * rt);
     }
-}
-
-speedometer()
-{
-    self endon("kill_speedometer");
-    flag_wait("timer_start");
-
-    self.speedometer = createfontstring("default" , 1.4);
-    self.speedometer.alpha = 0.8;
-    self.speedometer.hidewheninmenu = 1;
-    self.speedometer setpoint("CENTER", "CENTER", "CENTER", 190);
-
-    while (true)
-    {
-        self set_speedometer_color();
-        wait 0.05;
-    }
-}
-
-draw_client_split( index )
-{
-    self.sort = 2000;
-    self.alignx = "left";
-    self.aligny = "center";
-    self.horzalign = "user_left"; // user_left respects aspect ratio
-    self.vertalign = "top";
-    self.x = TIMER_X_OFFSET;
-    self.y = level.T6EE_Y_OFFSET + (index * TIMER_Y_INCREMENT);
-    self.fontscale = 1.4;
-    self.hidewheninmenu = 0;
-    self.alpha = 0.8;
-    self.color = TIMER_ACTIVE_COLOR;
 }
 
 timer_start_wait()
@@ -638,14 +643,14 @@ wait_for_split(split)
 run_anticheat()
 {
     wait 0.10; // make sure dvar cheat hud element is alive
-    set_dvar_if_unset("EE_anticheat", 1);
     if(getDvarInt("EE_anticheat"))
     {
         level.T6EE_RESTRICTED_DVARS = [];
         flag_wait("initial_players_connected");
 
         //Range dvars
-        add_restricted_dvar_range( "cg_fov", 65, 90, 90 );
+        add_restricted_dvar_range( "cg_fov", 65, 120, 90 );
+        add_restricted_dvar_range( "cg_fov_default", 65, 120, 90 );
         add_restricted_dvar_range( "sv_clientFpsLimit", 20, 250, 90 );
 
         //Value dvars
@@ -1199,38 +1204,38 @@ game_time_string(time)
 
 madeup_replaces()
 {
-    //tranzit
-    replacefunc(getfunction("maps/mp/zm_transit_sq", "maxis_sidequest_b"), ::replace_maxis_sidequest_b);
-    replacefunc(getfunction("maps/mp/zm_transit_sq", "get_how_many_progressed_from"), ::replace_get_how_many_progressed_from);
+    if(getDvarInt("EE_madeup"))
+    {
+        //tranzit
+        replacefunc(getfunction("maps/mp/zm_transit_sq", "maxis_sidequest_b"), ::replace_maxis_sidequest_b);
+        replacefunc(getfunction("maps/mp/zm_transit_sq", "get_how_many_progressed_from"), ::replace_get_how_many_progressed_from);
 
-    //die rise
-    replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_elevators"), ::replace_sq_atd_elevators);
-    replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_drg_puzzle"), ::replace_sq_atd_drg_puzzle);
-    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "wait_for_all_springpads_placed"), ::replace_wait_for_all_springpads_placed);
-    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_player_create_trigs"), ::replace_pts_should_player_create_trigs);
-    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_springpad_create_trigs"), ::replace_pts_should_springpad_create_trigs);
-    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_create_for_spot"), ::replace_pts_putdown_trigs_create_for_spot);
-    replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "place_ball_think"), ::replace_place_ball_think);
+        //die rise
+        replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_elevators"), ::replace_sq_atd_elevators);
+        replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_drg_puzzle"), ::replace_sq_atd_drg_puzzle);
+        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "wait_for_all_springpads_placed"), ::replace_wait_for_all_springpads_placed);
+        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_player_create_trigs"), ::replace_pts_should_player_create_trigs);
+        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_springpad_create_trigs"), ::replace_pts_should_springpad_create_trigs);
+        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_create_for_spot"), ::replace_pts_putdown_trigs_create_for_spot);
+        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "place_ball_think"), ::replace_place_ball_think);
 
-    //buried
-    replacefunc(getfunction("maps/mp/zm_buried_sq", "sq_metagame"), ::replace_sq_metagame);
-    replaceFunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_wisp_enery_watch"), ::replace_ctw_max_wisp_enery_watch );
-    replacefunc(getfunction("maps/mp/zm_buried_sq_tpo", "_are_all_players_in_time_bomb_volume"), ::replace_are_all_players_in_time_bomb_volume);
-    replacefunc(getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_set_current_bulb"), ::replace_sq_bp_set_current_bulb);
-    replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_target_delete_timer"), ::replace_ows_target_delete_timer);
-    replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_targets_start"), ::replace_ows_targets_start);
+        //buried
+        replacefunc(getfunction("maps/mp/zm_buried_sq", "sq_metagame"), ::replace_sq_metagame);
+        replaceFunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_wisp_enery_watch"), ::replace_ctw_max_wisp_enery_watch );
+        replacefunc(getfunction("maps/mp/zm_buried_sq_tpo", "_are_all_players_in_time_bomb_volume"), ::replace_are_all_players_in_time_bomb_volume);
+        replacefunc(getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_set_current_bulb"), ::replace_sq_bp_set_current_bulb);
+        replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_target_delete_timer"), ::replace_ows_target_delete_timer);
+        replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_targets_start"), ::replace_ows_targets_start);
 
-    flag_wait("initial_players_connected");
-    flag_set( "sq_intro_vo_done" );
-    navcard_set();
-    level.starting_player_count = level.players.size;
-
-    level waittill( "power_on" );
-    wait 10;
-    level notify( "buried_sidequest_achieved" );
+        flag_wait("initial_players_connected");
+        navcard_set();
+        level.starting_player_count = level.players.size;
+    }
 }
 
-/* ===================================NAV CARDS================================================= */
+/* =============================================================================================  */
+/*                                   NAV CARDS                                                    */
+/* =============================================================================================  */
 navcard_set()
 {
     map = getsubstr(level.script, 3);
@@ -1575,7 +1580,7 @@ sharpshooter_allowed_misses()
 	switch ( level.starting_player_count )
 	{
 		case 1: return total_targets - 20;  //Candy Shop 20 targets
-		case 2: return total_targets - 39;  // + Candy Shop 19 targets
+		case 2: return total_targets - 39;  // + saloon 19 targets
 		default: return 0; //All targets
 	}
 }
@@ -1702,8 +1707,9 @@ replace_sq_metagame()
 		level notify( "end_game_reward_starts_richtofen" );
 }
 
-
-//////////////////////// FOV CLAMPING
+/* =============================================================================================  */
+/*                                   FOV DESPAWN CLAMPING                                         */
+/* =============================================================================================  */
 
 fov_clamp()
 {
