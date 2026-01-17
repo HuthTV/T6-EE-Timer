@@ -1,10 +1,10 @@
 # T6EE Speedrun Timer
-Timer for speedrunning all Black Ops II Easter Eggs. Features automatic start, stop, and split functionality. Accuracy down to one game tick (50ms). Supports both in-game GSC timer and LiveSplit. Compatible with Plutonium R4524 and newer.
+All-in-one timer script for speedrunning every Black Ops II zombies Easter Egg. Features automatic start, stop, and split functionality. Accuracy down to one game tick (50ms). Supports both in-game GSC timer and LiveSplit. Compatible with Plutonium R4524 and newer.
 
 ## 📥 Installation
 Download the latest release from the link below and place the `T6EE.gsc` file in your Plutonium scripts folder: 
 <pre>C:\Users\%username%\AppData\Local\Plutonium\storage\t6\scripts\zm</pre>
-### **Latest T6EE release 5.2 ➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.2/T6EE_5.2.gsc)**
+### **Latest T6EE release 6.0 ➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.2/T6EE_5.2.gsc)**
 
 ## ⏱️ LiveSplit Setup
 To connect LiveSplit with the timer, you must install an autosplitter script (asl file) in your layout. You can find it here **➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.2/T6EE_5.2.asl)**  
@@ -37,19 +37,28 @@ The timer tracks restarts and completions for every map and for any number of pl
 ## 💬 Chat commands
 
 Various commands are available to enter straight into the game chat, found in table below.
-| Command   | Description                                       |
-| --------- | ------------------------------------------------- |
-| timer   | Toggles the ingame timer (requires a reset)         |
-| super   | Toggle super EE timing mode                         |
-| strafe  | Switches strafe DVARs between console and PC values |
-| speed   | Toggles the speedometer                             |
-| tank    | Toggle origins tank push trigger                    |
-| stats   | Toggle tracking reset/completions stats             |
-| restore | Resets your config file to default settings         |
+| Command   | Description                                         |
+| --------- | --------------------------------------------------- |
+| timer     | Toggles the ingame timer (requires a reset)         |
+| super     | Toggle super EE timing mode                         |
+| strafe    | Switches strafe DVARs between console and PC values |
+| speed     | Toggles the speedometer                             |
+| tank      | Toggle origins tank push trigger                    |
+| stats     | Toggle tracking reset/completions stats             |
+| restore   | Resets your config file to default settings         |
+| madeup    | Toggle madeup scripts                               |
+| anticheat | Prevent anticheat form loading on map start         |
 
 
 ## 🔄 Chat Restarts
 Players can initiate a fast restart by typing `r`, `restart`, or `fast_restart` in the game chat. To simplify restarts, players can bind a key to the say command. For example, `bind F2 say restart` in the game console.
+
+## 🚫 Anti Cheat
+To ensure fair play, several measures are in place to prevent players from gaining an unfair advantage through dvars or loaded scripts. The timer will automatically activate `cg_flashScriptHashes` and `cg_drawIdentifier` and execute the `flashScriptHashes` command at the start and end of each run. Additionally, a dvar monitor runs continuously, tracking any changes to dvar values. If a value falls outside the allowed range, it will be clearly displayed on-screen. The full list of tracked dvars can be found [here]. Any illegal dvar values detected on map load will be automatically corrected before timing begins.
+
+## 🤡 Victis solo & Coop "madeup" scripts
+
+Certain maps normally require a minimum number of players to complete the Easter Egg. This timer includes “madeup” code that lets players complete the egg with fewer than the required number. The code emulates the behaviors found in this repository:[T6-Any-Player-EE-Scripts](https://github.com/Hadi77KSA/Plutonium-T6-Any-Player-EE-Scripts/blob/7d890242c2cf3f8741382d1c7d30eeedc7fe588d). For full details, check out the repos [readme](https://github.com/Hadi77KSA/Plutonium-T6-Any-Player-EE-Scripts/blob/7d890242c2cf3f8741382d1c7d30eeedc7fe588d/README.md). These “madeup” features can be disabeled via the `EE_madeup` dvar.
 
 ## 🧭 Super Easter Egg Timing
 Super Timing runs a single timer across all maps. Tranzit is unchanged, Die Rise and Buried will show the total time in-game. LiveSplit also won’t reset between maps. Buried has a super exlusive split for triggering the EE reward button after Sharpshooter.
