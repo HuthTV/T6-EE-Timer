@@ -52,7 +52,7 @@ Various commands are available to enter straight into the game chat, found in ta
 Players can initiate a fast restart by typing `r`, `restart`, or `fast_restart` in the game chat. To simplify restarts, players can bind a key to the say command. For example, `bind F2 say restart` in the game console.
 
 ## 🚫 Anti Cheat
-To ensure fair play, several measures are in place to prevent players from gaining an unfair advantage through dvars or loaded scripts. The timer will automatically activate `cg_flashScriptHashes` and `cg_drawIdentifier` and execute the `flashScriptHashes` command at the start and end of each run. Additionally, a dvar monitor runs continuously, tracking any changes to dvar values. If a value falls outside the allowed range, it will be clearly displayed on-screen. The full list of tracked dvars can be found [here]. Any illegal dvar values detected on map load will be automatically corrected before timing begins.
+To ensure fair play, several measures are in place to prevent players from gaining an unfair advantage through dvars or loaded scripts. The timer will automatically activate `cg_flashScriptHashes` and `cg_drawIdentifier` and execute the `flashScriptHashes` command at the start and end of each run. Additionally, a dvar monitor runs continuously, tracking any changes to hosts dvar values. If a value falls outside the allowed range, it will be clearly displayed on-screen. The full list of tracked dvars can be found [here]. Any illegal dvar values detected on map load will be automatically corrected before timing begins.
 
 ## 🤡 Victis solo & Coop "madeup" scripts
 
