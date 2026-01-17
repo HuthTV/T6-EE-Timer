@@ -23,7 +23,6 @@
 | cg_drawIdentifier                                | 1             |
 | cg_flashScriptHashes                             | 1             |
 | cg_fovmin                                       | 10            |
-| cg_fovScale                                     | 1             |
 | cg_weaponCycleDelay                              | 0             |
 | cl_fix_25day_blackscreen                         | 0             |
 | g_fix_entity_leaks                               | 0             |
