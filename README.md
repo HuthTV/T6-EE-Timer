@@ -39,15 +39,13 @@ The timer tracks restarts and completions for every map and for any number of pl
 Various commands are available to enter straight into the game chat, found in table below.
 | Command   | Description                                         |
 | --------- | --------------------------------------------------- |
-| timer     | Toggles the ingame timer (requires a reset)         |
-| super     | Toggle super EE timing mode                         |
-| strafe    | Switches strafe DVARs between console and PC values |
-| speed     | Toggles the speedometer                             |
-| tank      | Toggle origins tank push trigger                    |
-| stats     | Toggle tracking reset/completions stats             |
-| restore   | Resets your config file to default settings         |
+| anticheat | Pause anticheat form loading on map start           |
 | madeup    | Toggle madeup scripts                               |
-| anticheat | Prevent anticheat form loading on map start         |
+| restore   | Resets your config file to default settings         |
+| speed     | Toggle the speedometer                              |
+| stats     | Toggle tracking reset/completion stats              |
+| super     | Toggle super EE timing mode                         |
+| timer     | Toggle the ingame timer (requires a reset)          |
 
 
 ## 🔄 Chat Restarts
