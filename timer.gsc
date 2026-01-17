@@ -671,7 +671,7 @@ run_anticheat()
         add_restricted_dvar_value( "cg_drawIdentifier", 1 );
         add_restricted_dvar_value( "cg_flashScriptHashes", 1 );
         add_restricted_dvar_value( "cg_fovmin", 10 );
-        add_restricted_dvar_value( "cg_fovScale", 1 );
+        //add_restricted_dvar_value( "cg_fovScale", 1 );
         add_restricted_dvar_value( "cg_weaponCycleDelay", 0 );
         add_restricted_dvar_value( "cl_fix_25day_blackscreen", 0 );
         add_restricted_dvar_value( "g_fix_entity_leaks", 0 );
