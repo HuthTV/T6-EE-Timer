@@ -1206,26 +1206,32 @@ madeup_replaces()
 {
     if(getDvarInt("EE_madeup"))
     {
-        //tranzit
-        replacefunc(getfunction("maps/mp/zm_transit_sq", "maxis_sidequest_b"), ::replace_maxis_sidequest_b);
-        replacefunc(getfunction("maps/mp/zm_transit_sq", "get_how_many_progressed_from"), ::replace_get_how_many_progressed_from);
+        switch ( level.script )
+        {
+            case "zm_transit": //tranzit
+                replacefunc(getfunction("maps/mp/zm_transit_sq", "maxis_sidequest_b"), ::replace_maxis_sidequest_b);
+                replacefunc(getfunction("maps/mp/zm_transit_sq", "get_how_many_progressed_from"), ::replace_get_how_many_progressed_from);
+                break;
 
-        //die rise
-        replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_elevators"), ::replace_sq_atd_elevators);
-        replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_drg_puzzle"), ::replace_sq_atd_drg_puzzle);
-        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "wait_for_all_springpads_placed"), ::replace_wait_for_all_springpads_placed);
-        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_player_create_trigs"), ::replace_pts_should_player_create_trigs);
-        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_springpad_create_trigs"), ::replace_pts_should_springpad_create_trigs);
-        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_create_for_spot"), ::replace_pts_putdown_trigs_create_for_spot);
-        replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "place_ball_think"), ::replace_place_ball_think);
+            case "zm_highrise": //die rise
+                replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_elevators"), ::replace_sq_atd_elevators);
+                replacefunc(getfunction("maps/mp/zm_highrise_sq_atd", "sq_atd_drg_puzzle"), ::replace_sq_atd_drg_puzzle);
+                replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "wait_for_all_springpads_placed"), ::replace_wait_for_all_springpads_placed);
+                replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_player_create_trigs"), ::replace_pts_should_player_create_trigs);
+                replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_should_springpad_create_trigs"), ::replace_pts_should_springpad_create_trigs);
+                replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "pts_putdown_trigs_create_for_spot"), ::replace_pts_putdown_trigs_create_for_spot);
+                replacefunc(getfunction("maps/mp/zm_highrise_sq_pts", "place_ball_think"), ::replace_place_ball_think);
+                break;
 
-        //buried
-        replacefunc(getfunction("maps/mp/zm_buried_sq", "sq_metagame"), ::replace_sq_metagame);
-        replaceFunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_wisp_enery_watch"), ::replace_ctw_max_wisp_enery_watch );
-        replacefunc(getfunction("maps/mp/zm_buried_sq_tpo", "_are_all_players_in_time_bomb_volume"), ::replace_are_all_players_in_time_bomb_volume);
-        replacefunc(getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_set_current_bulb"), ::replace_sq_bp_set_current_bulb);
-        replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_target_delete_timer"), ::replace_ows_target_delete_timer);
-        replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_targets_start"), ::replace_ows_targets_start);
+            case "zm_buried": //buried
+                replacefunc(getfunction("maps/mp/zm_buried_sq", "sq_metagame"), ::replace_sq_metagame);
+                if ( level.players.size < 3 ) replaceFunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_wisp_enery_watch"), ::replace_ctw_max_wisp_enery_watch );
+                replacefunc(getfunction("maps/mp/zm_buried_sq_tpo", "_are_all_players_in_time_bomb_volume"), ::replace_are_all_players_in_time_bomb_volume);
+                replacefunc(getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_set_current_bulb"), ::replace_sq_bp_set_current_bulb);
+                replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_target_delete_timer"), ::replace_ows_target_delete_timer);
+                replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_targets_start"), ::replace_ows_targets_start);
+                break;
+        }
 
         flag_wait("initial_players_connected");
         navcard_set();
@@ -1298,7 +1304,7 @@ replace_get_how_many_progressed_from( story, a, b )
 {
 	if ( !IS_SOLO && (isdefined( level.sq_progress[story][a] ) && !isdefined( level.sq_progress[story][b] ) || !isdefined( level.sq_progress[story][a] ) && isdefined( level.sq_progress[story][b] )) )
 		return 1;
-	else if ( IS_SOLO || isdefined( level.sq_progress[story][a] ) && isdefined( level.sq_progress[story][b] ) )
+	else if ( isdefined( level.sq_progress[story][a] ) && ( IS_SOLO || isdefined( level.sq_progress[story][b] ) ) )
 		return 2;
 
 	return 0;
