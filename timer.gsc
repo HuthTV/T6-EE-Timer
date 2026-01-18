@@ -108,7 +108,7 @@ super_timer()
 {
     self.sort = 2000;
     self.alignx = "left";
-    self.aligny = "middle";
+    self.aligny = "top";
     self.horzalign = "user_left"; // user_left respects aspect ratio
     self.vertalign = "top";
     self.x = TIMER_X_OFFSET;
@@ -273,7 +273,7 @@ draw_client_split( index )
 {
     self.sort = 2000;
     self.alignx = "left";
-    self.aligny = "middle";
+    self.aligny = "top";
     self.horzalign = "user_left"; // user_left respects aspect ratio
     self.vertalign = "top";
     self.x = TIMER_X_OFFSET;
@@ -432,7 +432,6 @@ timer_start_wait()
     level thread game_start_check();
     if(IS_MOB) level thread mob_start_check();
     flag_wait("timer_start");
-    waittillframeend;
 }
 
 game_start_check()
@@ -1037,7 +1036,8 @@ overflow_manager()
 {
     level endon("game_ended");
 	level endon("host_migration_begin");
-    flag_wait("initial_blackscreen_passed");
+    flag_wait("initial_players_connected");
+    waittillframeend;
 
     // all strings allocated after this will be periodically removed
     level.overflow = newhudelem();
@@ -1234,7 +1234,7 @@ madeup_replaces()
         }
 
         flag_wait("initial_players_connected");
-        navcard_set();
+        if ( IS_VICTIS ) navcard_set();
         level.starting_player_count = level.players.size;
     }
 }
