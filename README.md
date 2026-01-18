@@ -4,10 +4,10 @@ All-in-one timer script for speedrunning every Black Ops II zombies Easter Egg. 
 ## 📥 Installation
 Download the latest release from the link below and place the `T6EE.gsc` file in your Plutonium scripts folder: 
 <pre>C:\Users\%username%\AppData\Local\Plutonium\storage\t6\scripts\zm</pre>
-### **Latest T6EE release 6.0 ➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.2/T6EE_5.2.gsc)**
+### **Latest T6EE release 6.0 ➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V6.0/T6EE_6.0.gsc)**
 
 ## ⏱️ LiveSplit Setup
-To connect LiveSplit with the timer, you must install an autosplitter script (asl file) in your layout. You can find it here **➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V5.2/T6EE_5.2.asl)**  
+To connect LiveSplit with the timer, you must install an autosplitter script (asl file) in your layout. You can find it here **➡️[Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V6.0/T6EE_6.asl)**  
 
 - Open the layout editor by right-clicking LiveSplit and selecting `Edit Layout...`  
 - Click `+ > Control > Scriptable Auto Splitter` to add that component.
