@@ -1225,7 +1225,7 @@ madeup_replaces()
 
             case "zm_buried": //buried
                 replacefunc(getfunction("maps/mp/zm_buried_sq", "sq_metagame"), ::replace_sq_metagame);
-                if ( level.players.size < 3 ) replaceFunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_wisp_enery_watch"), ::replace_ctw_max_wisp_enery_watch );
+                replaceFunc(getfunction("maps/mp/zm_buried_sq_ctw", "ctw_max_wisp_enery_watch"), ::replace_ctw_max_wisp_enery_watch );
                 replacefunc(getfunction("maps/mp/zm_buried_sq_tpo", "_are_all_players_in_time_bomb_volume"), ::replace_are_all_players_in_time_bomb_volume);
                 replacefunc(getfunction("maps/mp/zm_buried_sq_ip", "sq_bp_set_current_bulb"), ::replace_sq_bp_set_current_bulb);
                 replacefunc(getfunction("maps/mp/zm_buried_sq_ows", "ows_target_delete_timer"), ::replace_ows_target_delete_timer);
@@ -1530,13 +1530,16 @@ replace_sq_bp_set_current_bulb( str_tag )
 replace_ctw_max_wisp_enery_watch()
 {
     self endon( "death" );
-
     while ( true )
     {
-        self.n_sq_energy = self.n_sq_max_energy;
+        if( level.starting_player_count < 3)
+            self.n_sq_energy = self.n_sq_max_energy;
+
+        if ( self.n_sq_energy <= 0 )
+            flag_set( "sq_wisp_failed" );
+
         wait 1;
     }
-
 }
 
 replace_ows_target_delete_timer()
