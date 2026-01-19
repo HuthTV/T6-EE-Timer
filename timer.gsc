@@ -1,4 +1,4 @@
-#define VERSION "6.0"
+#define VERSION "6.1"
 #define CFG_FILE "T6EE/T6EE.cfg"
 #define TIMER_FILE "T6EE/T6EE.dat"
 #define STATS_FILE "T6EE/T6EE.stats"
