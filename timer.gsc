@@ -62,7 +62,7 @@ init()
     thread setup_splits_and_labels();
     thread handle_chat_commands();
     thread game_over_wait();
-    //thread fov_clamp(); not requred, implemented just incase
+    thread fov_clamp();
 
     if(level.T6EE_STATS_ACTIVE) thread stats_tracking();
     timer_start_wait();
@@ -1722,11 +1722,15 @@ replace_sq_metagame()
 
 fov_clamp()
 {
-    replacefunc(getfunction("maps/mp/zm_tomb_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
-    replacefunc(getfunction("maps/mp/zm_transit_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
-    replacefunc(getfunction("maps/mp/zm_alcatraz_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
-    replacefunc(getfunction("maps/mp/zm_highrise_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
-    replacefunc(getfunction("maps/mp/zm_buried_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+    switch ( level.script )
+    {
+        case "zm_transit":  replacefunc(getfunction("maps/mp/zm_transit_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+        case "zm_highrise": replacefunc(getfunction("maps/mp/zm_highrise_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+        case "zm_prison":   replacefunc(getfunction("maps/mp/zm_alcatraz_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+        case "zm_buried":   replacefunc(getfunction("maps/mp/zm_buried_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+        case "zm_tomb":     replacefunc(getfunction("maps/mp/zm_tomb_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+    }
+
     replacefunc(getfunction("maps/mp/zombies/_zm_ai_faller", "in_player_fov"), ::ai_faller_in_player_fov);
 }
 
@@ -1748,7 +1752,7 @@ clamped_player_can_see_me( player )
     else
         anglefromcenter = acos( forwarddotbanzai );
 
-    playerfov = min(90.0, getdvarfloat( #"cg_fov" ));
+    playerfov = max(65.0, min(90.0, getdvarfloat( #"cg_fov" )));
     banzaivsplayerfovbuffer = getdvarfloat( #"g_banzai_player_fov_buffer" );
 
     if ( banzaivsplayerfovbuffer <= 0 )
@@ -1769,7 +1773,7 @@ ai_faller_in_player_fov( player )
     playertobanzaiunitvec = vectornormalize( playertobanzaivec );
     forwarddotbanzai = vectordot( playerunitforwardvec, playertobanzaiunitvec );
     anglefromcenter = acos( forwarddotbanzai );
-    playerfov = min(90.0, getdvarfloat( #"cg_fov" ));
+    playerfov = max(65.0, min(90.0, getdvarfloat( #"cg_fov" )));
     banzaivsplayerfovbuffer = getdvarfloat( #"g_banzai_player_fov_buffer" );
 
     if ( banzaivsplayerfovbuffer <= 0 )
