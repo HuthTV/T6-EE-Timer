@@ -1724,11 +1724,11 @@ fov_clamp()
 {
     switch ( level.script )
     {
-        case "zm_transit":  replacefunc(getfunction("maps/mp/zm_transit_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
-        case "zm_highrise": replacefunc(getfunction("maps/mp/zm_highrise_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
-        case "zm_prison":   replacefunc(getfunction("maps/mp/zm_alcatraz_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
-        case "zm_buried":   replacefunc(getfunction("maps/mp/zm_buried_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
-        case "zm_tomb":     replacefunc(getfunction("maps/mp/zm_tomb_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);
+        case "zm_transit":  replacefunc(getfunction("maps/mp/zm_transit_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);  break;
+        case "zm_highrise": replacefunc(getfunction("maps/mp/zm_highrise_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me); break;
+        case "zm_prison":   replacefunc(getfunction("maps/mp/zm_alcatraz_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me); break;
+        case "zm_buried":   replacefunc(getfunction("maps/mp/zm_buried_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);   break;
+        case "zm_tomb":     replacefunc(getfunction("maps/mp/zm_tomb_distance_tracking", "player_can_see_me"), ::clamped_player_can_see_me);     break;
     }
 
     replacefunc(getfunction("maps/mp/zombies/_zm_ai_faller", "in_player_fov"), ::ai_faller_in_player_fov);
