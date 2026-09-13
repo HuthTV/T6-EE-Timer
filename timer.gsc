@@ -718,9 +718,8 @@ dvar_monitor()
     cheat_hud.alpha = 0;
     cheat_hud.color = (1, 0, 0);
     cheat_hud.glowcolor = (1, 1, 1);
-    cheat_hud setTextUnlimited(cheat_hud.string);
-
     cheat_string = "ILLEGAL DVAR CHANGE";
+    cheat_hud setTextUnlimited(cheat_string);
 
     while (true)
     {
@@ -736,7 +735,7 @@ dvar_monitor()
             {
                 cheat_hud.alpha = 1;
                 cheat_string = cheat_string + "\n" + toupper(dvar) + " " + parsed;
-                cheat_hud setTextUnlimited(cheat_hud.string);
+                cheat_hud setTextUnlimited(cheat_string);
             }
         }
         else if(data.type == "range")
@@ -746,7 +745,7 @@ dvar_monitor()
             {
                 cheat_hud.alpha = 1;
                 cheat_string = cheat_string + "\n" + toupper(dvar) + " " + parsed;
-                cheat_hud setTextUnlimited(cheat_hud.string);
+                cheat_hud setTextUnlimited(cheat_string);
             }
         }
         else if(data.type == "string")
@@ -755,7 +754,7 @@ dvar_monitor()
             {
                 cheat_hud.alpha = 1;
                 cheat_string = cheat_string + "\n" + toupper(dvar) + " " + toupper(new);
-                cheat_hud setTextUnlimited(cheat_hud.string);
+                cheat_hud setTextUnlimited(cheat_string);
             }
         }
     }
