@@ -45,7 +45,6 @@ init()
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
     level.T6EE_STATS_ACTIVE = int(level.T6EE_CFG["show_stats"]);
     level.T6EE_SUPER_TIMING = int(level.T6EE_CFG["super_timing"]);
-    level.managed_text_huds = [];
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
 
     set_dvar_if_unset("EE_madeup", 1);
@@ -53,8 +52,6 @@ init()
 
     thread madeup_replaces();
     thread run_anticheat();
-    thread precache_hud_strings();
-    thread overflow_manager();
     thread setup_start_data();
     thread on_player_connect();
     thread verify_network_frame();
@@ -70,14 +67,14 @@ init()
 
     if((level.T6EE_HUD) && level.non_first_super_map)
     {
-        level.T6EE_SUPER_HUD = create_tracked_hud();
+        level.T6EE_SUPER_HUD = newhudelem();
         level.T6EE_SUPER_HUD thread super_timer();
     }
 
     for(split = 0; split < level.T6EE_SPLIT_LIST.size; split++)
     {
         level.T6EE_SPLIT[split] = spawnstruct();
-        if(level.T6EE_HUD) level.T6EE_SPLIT[split].timer = create_tracked_hud();
+        if(level.T6EE_HUD) level.T6EE_SPLIT[split].timer = newhudelem();
         level.T6EE_SPLIT[split] process_split();
         wait 0.05;
     }
@@ -125,7 +122,7 @@ super_timer()
         time = level.timing_offset + gettime() - level.T6EE_START_TIME;
         frame_string = "^3Total ^7" + game_time_string(time);
         self.split_string = frame_string;
-        self set_safe_text(frame_string);
+        self setTextUnlimited(frame_string);
     }
     if(IS_BURIED && flag("timer_end")) self.color = TIMER_COMPLETE_COLOR;
 }
@@ -257,7 +254,7 @@ split_refresh()
         {
             frame_string = "^3" + self.split_label + " ^7" + game_time_string(time);
             self.split_string = frame_string;
-            self.timer set_safe_text(frame_string);
+            self.timer setTextUnlimited(frame_string);
         }
 
         write_livesplit_data(time + level.timing_offset);
@@ -710,6 +707,21 @@ run_anticheat()
 
 dvar_monitor()
 {
+    cheat_hud = newhudelem();
+    cheat_hud.sort = 2000;
+    cheat_hud.alignx = "center";
+    cheat_hud.aligny = "top";
+    cheat_hud.horzalign = "center"; // user_left respects aspect ratio
+    cheat_hud.vertalign = "top";
+    cheat_hud.fontscale = 1.4;
+    cheat_hud.hidewheninmenu = 0;
+    cheat_hud.alpha = 0;
+    cheat_hud.color = (1, 0, 0);
+    cheat_hud.glowcolor = (1, 1, 1);
+    cheat_hud setTextUnlimited(cheat_hud.string);
+
+    cheat_string = "ILLEGAL DVAR CHANGE";
+
     while (true)
     {
         level waittill ("dvar_changed", dvar, new, old);
@@ -722,8 +734,9 @@ dvar_monitor()
             parsed = float(new);
             if (parsed != data.value)
             {
-                level.cheat_display.alpha = 1;
-                level.cheat_display set_safe_text(level.cheat_display.text_string + "\n" + toupper(dvar) + " " + parsed);
+                cheat_hud.alpha = 1;
+                cheat_string = cheat_string + "\n" + toupper(dvar) + " " + parsed;
+                cheat_hud setTextUnlimited(cheat_hud.string);
             }
         }
         else if(data.type == "range")
@@ -731,16 +744,18 @@ dvar_monitor()
             parsed = float(new);
             if (parsed < data.min || parsed > data.max)
             {
-                level.cheat_display.alpha = 1;
-                level.cheat_display set_safe_text(level.cheat_display.text_string + "\n" + toupper(dvar) + " " + parsed);
+                cheat_hud.alpha = 1;
+                cheat_string = cheat_string + "\n" + toupper(dvar) + " " + parsed;
+                cheat_hud setTextUnlimited(cheat_hud.string);
             }
         }
         else if(data.type == "string")
         {
             if(new != data.value)
             {
-                level.cheat_display.alpha = 1;
-                level.cheat_display set_safe_text(level.cheat_display.text_string + "\n" + toupper(dvar) + " " + toupper(new));
+                cheat_hud.alpha = 1;
+                cheat_string = cheat_string + "\n" + toupper(dvar) + " " + toupper(new);
+                cheat_hud setTextUnlimited(cheat_hud.string);
             }
         }
     }
@@ -1004,187 +1019,6 @@ setup_splits_and_labels()
     }
 
     level.T6EE_SPLIT_LIST = splits[level.script];
-}
-
-set_safe_text(text)
-{
-	level.string_count += 1;
-
-    // Notify overflow monitor on setText
-	level notify("textset");
-    self.text_string = text;
-	self setText(text);
-}
-
-set_text_no_notify(text)
-{
-	level.string_count += 1;
-
-    // Notify overflow monitor on setText
-    self.text_string = text;
-	self setText(text);
-}
-
-create_tracked_hud()
-{
-    hud = newhudelem();
-    level.managed_text_huds[level.managed_text_huds.size] = hud;
-    return hud;
-}
-
-overflow_manager()
-{
-    level endon("game_ended");
-	level endon("host_migration_begin");
-    flag_wait("initial_players_connected");
-    waittillframeend;
-
-    // all strings allocated after this will be periodically removed
-    level.overflow = newhudelem();
-    level.overflow setText("overflow");
-    level.overflow.alpha = 0;
-    level.string_count = 0;
-
-    level.cheat_display = create_tracked_hud();
-    level.cheat_display.sort = 2000;
-    level.cheat_display.alignx = "center";
-    level.cheat_display.aligny = "top";
-    level.cheat_display.horzalign = "center"; // user_left respects aspect ratio
-    level.cheat_display.vertalign = "top";
-    level.cheat_display.fontscale = 1.4;
-    level.cheat_display.hidewheninmenu = 0;
-    level.cheat_display.alpha = 0;
-    level.cheat_display.color = (1, 0, 0);
-    level.cheat_display.glowcolor = (1, 1, 1);
-    level.cheat_display set_safe_text("ILLEGAL DVAR CHANGE");
-
-    max_string_count = 50;
-
-    while(true)
-    {
-        level waittill("textset");
-
-        if(level.string_count >= max_string_count)
-        {
-            level.overflow ClearAllTextAfterHudElem();
-            level.string_count = 0;
-
-            foreach(elem in level.managed_text_huds)
-            {
-                if(isdefined(elem))
-                    elem set_text_no_notify(elem.text_string); // or split_string if applicable
-            }
-        }
-    }
-}
-
-precache_hud_strings()
-{
-    //precache string that are normally not precached to avoid timer clearing them
-    switch(level.script)
-    {
-        case "zm_transit":
-            precachestring( &"ZOMBIE_EQUIP_RIOTSHIELD_HOWTO");
-            precachestring( &"ZOMBIE_EQUIP_ELECTRICTRAP_HOWTO");
-            precachestring( &"ZOMBIE_EQUIP_TURBINE_HOWTO");
-            precachestring( &"ZOMBIE_EQUIP_JETGUN_HOWTO");
-            precachestring( &"ZOMBIE_EQUIP_TURRET_HOWTO");
-            break;
-
-        case "zm_highrise":
-            precachestring( &"ZM_HIGHRISE_EQUIP_SPRINGPAD_HOWTO");
-            precachestring( &"ZM_HIGHRISE_EQUIP_SLIPGUN_PICKUP_HINT_STRING");
-            precachestring( &"ZM_HIGHRISE_EQUIP_SLIPGUN_HOWTO");
-            break;
-
-        case "zm_prison":
-            precachestring( &"ZM_PRISON_AFTERLIFE_HOWTO");
-            precachestring( &"ZM_PRISON_AFTERLIFE_HOWTO_2");
-            precachestring( &"ZM_PRISON_TOMAHAWK_TUTORIAL");
-            precachestring( &"ZOMBIE_EQUIP_RIOTSHIELD_PICKUP_HINT");
-            precachestring( &"ZOMBIE_EQUIP_RIOTSHIELD_HOWTO");
-            precachestring( &"ZM_PRISON_RIOTSHIELD_ATTACK");
-            precachestring( &"ZM_PRISON_RIOTSHIELD_DEPLOY");
-            precachestring( &"ZM_CRAFTABLES_CHANGE_BUILD");
-            precachestring( &"ZM_PRISON_LIFE_OVER");
-            precachestring( &"GAME_REVIVING");
-            break;
-
-        case "zm_buried":
-            precachestring( &"ZM_BURIED_SQ_SEARCHING");
-            precachestring( &"ZOMBIE_BUILD_PIECE_SWITCH");
-            precachestring( &"ZOMBIE_EQUIP_TURBINE_HOWTO");
-            precachestring( &"ZM_BURIED_EQ_SP_HTS");    //springpad
-            precachestring( &"ZM_BURIED_EQ_SW_HTS");    //subwoof
-            precachestring( &"ZM_BURIED_EQ_HC_HTS");    //headchopper
-            precachestring( &"ZM_BURIED_GIVING");
-            precachestring( &"ZOMBIE_TIMEBOMB_PICKUP");
-            precachestring( &"ZOMBIE_TIMEBOMB_HOWTO");
-            precachestring( &"ZM_BURIED_BOOZE_G");
-            precachestring( &"ZM_BURIED_BOOZE_B");
-            precachestring( &"ZM_BURIED_I_NEED_BOOZE");
-            precachestring( &"ZM_BURIED_I_SAID_BOOZE");
-            precachestring( &"ZM_BURIED_CANDY_G");
-            precachestring( &"ZM_BURIED_CANDY_B");
-            precachestring( &"ZM_BURIED_I_WANT_CANDY");
-            precachestring( &"ZM_BURIED_THATS_NOT_CANDY");
-            precachestring( &"ZM_BURIED_DRAW");
-            precachestring( &"ZM_BURIED_KEY_G");
-            precachestring( &"ZM_BURIED_UNLOCKING");
-            precachestring( &"ZM_BURIED_WB");
-            precachestring( &"ZM_BURIED_WALLBUILD");
-            precachestring( &"ZM_BURIED_RANDOM_WALLBUY");
-            precachestring( &"ZM_BURIED_BUY_UNKNOWN_STUFF");
-            break;
-
-        case "zm_tomb":
-            precachestring( &"ZOMBIE_EQUIP_RIOTSHIELD_PICKUP_HINT");
-            precachestring( &"ZOMBIE_EQUIP_RIOTSHIELD_HOWTO");
-            precachestring( &"ZM_CRAFTABLES_CHANGE_BUILD");
-            precachestring( &"ZOMBIE_BUILDING");
-            precachestring( &"ZM_TOMB_RU");
-            precachestring( &"ZM_TOMB_OSO");
-            precachestring( &"ZM_TOMB_GREL");
-            precachestring( &"ZM_TOMB_DIHO");
-            break;
-    }
-
-    precachestring( &"ZOMBIE_CLAYMORE_HOWTO");
-    precachestring( &"ZOMBIE_PLAYERZOMBIE_DOWNED");
-    precachestring( &"ZOMBIE_SUICIDING");
-
-    flag_wait("initial_players_connected");
-
-    //chache string that are player name specific ahead of time
-    tmp_strings = [];
-    runners = getplayers();
-
-    // Shared strings
-    foreach(p in runners)
-    {
-        tmp_strings[p.name + "ZPIRY"] = newhudelem();
-        tmp_strings[p.name + "ZPIRY"] settext( &"ZOMBIE_PLAYER_IS_REVIVING_YOU", p);
-        tmp_strings[p.name + "ZPIRY"].alpha = 0;
-
-        tmp_strings[p.name + "ZPNTBR"] = newhudelem();
-        tmp_strings[p.name + "ZPNTBR"] settext( &"ZOMBIE_PLAYER_NEEDS_TO_BE_REVIVED", p);
-        tmp_strings[p.name + "ZPNTBR"].alpha = 0;
-
-        tmp_strings[p.name + "ZRS"] = newhudelem();
-        tmp_strings[p.name + "ZRS"] settext( &"ZOMBIE_REVIVING_SOLO", p);
-        tmp_strings[p.name + "ZRS"].alpha = 0;
-    }
-
-    // mob/gins specific strings
-    if(IS_MOB || IS_ORIGINS)
-    {
-        foreach(p in runners)
-        {
-            tmp_strings[p.name + "GPIRY"] = newhudelem();
-            tmp_strings[p.name + "GPIRY"] settext( &"GAME_PLAYER_IS_REVIVING_YOU", p);
-            tmp_strings[p.name + "GPIRY"].alpha = 0;
-        }
-    }
 }
 
 game_time_string(time)
