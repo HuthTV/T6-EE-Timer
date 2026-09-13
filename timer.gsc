@@ -696,46 +696,104 @@ dvar_monitor()
     cheat_hud.alpha = 0;
     cheat_hud.color = (1, 0, 0);
     cheat_hud.glowcolor = (1, 1, 1);
-    cheat_string = "ILLEGAL DVAR CHANGE";
-    cheat_hud setTextUnlimited(cheat_string);
+    level.T6EE_CHEAT_HUD = cheat_hud;
+    level.T6EE_CHEAT_STRING = "ILLEGAL DVAR CHANGE";
+    cheat_hud setTextUnlimited(level.T6EE_CHEAT_STRING);
 
-    while (true)
+    foreach(player in getplayers())
     {
-        level waittill ("dvar_changed", dvar, new, old);
+        if(player ishost())
+        {
+            level thread level_dvar_monitor(player.name);
+        }
+        else
+        {
+            player thread client_dvar_initial_responses();
+            player thread player_dvar_monitor();
+        }
+    }   
+}
 
-        dvar = tolower(dvar);
-        data = level.T6EE_RESTRICTED_DVARS[dvar];
-
-        if(data.type == "value")
-        {
-            parsed = float(new);
-            if (parsed != data.value)
-            {
-                cheat_hud.alpha = 1;
-                cheat_string = cheat_string + "\n" + toupper(dvar) + " " + parsed;
-                cheat_hud setTextUnlimited(cheat_string);
-            }
-        }
-        else if(data.type == "range")
-        {
-            parsed = float(new);
-            if (parsed < data.min || parsed > data.max)
-            {
-                cheat_hud.alpha = 1;
-                cheat_string = cheat_string + "\n" + toupper(dvar) + " " + parsed;
-                cheat_hud setTextUnlimited(cheat_string);
-            }
-        }
-        else if(data.type == "string")
-        {
-            if(new != data.value)
-            {
-                cheat_hud.alpha = 1;
-                cheat_string = cheat_string + "\n" + toupper(dvar) + " " + toupper(new);
-                cheat_hud setTextUnlimited(cheat_string);
-            }
-        }
+start_dvar_monitor()
+{
+    if(self ishost())
+    {
+        // The level monitor covers the host; avoid duplicate client reports.
+        level.T6EE_DVAR_HOST_NAME = self.name;
+        return;
     }
+
+    self thread player_dvar_monitor();
+}
+
+player_dvar_monitor()
+{
+    self endon("disconnect");
+    whitelist = strtok("sv_cheats|cg_fov|cg_fovscale|cg_fovmin|com_maxfps|cg_debuginfocorneroffset|cg_flashscripthashes|cg_drawidentifier|r_mode|loc_language|developer|developer_script", "|");
+    foreach(dvar in whitelist)
+    {
+        if(isdefined(level.T6EE_RESTRICTED_DVARS[dvar]))
+            self enableDvarChangedNotify(dvar);
+            self getClientDvar(dvar);
+    }
+
+    while(true)
+    {
+        self waittill("dvar_changed", dvar, new, old);
+        report_dvar_violation(self.name, dvar, new);
+    }
+}
+
+client_dvar_initial_responses()
+{
+    while(!flag("initial_blackscreen_passed"))
+    {
+        self waittill("get_client_dvar_response", dvar, value);
+        report_dvar_violation(self.name, dvar, value);
+    }
+}
+
+level_dvar_monitor(host_name)
+{
+    while(true)
+    {
+        level waittill("dvar_changed", dvar, new, old);
+        report_dvar_violation(host_name, dvar, new);
+    }
+}
+
+report_dvar_violation(source_name, dvar, new)
+{
+    dvar = tolower(dvar);
+    data = level.T6EE_RESTRICTED_DVARS[dvar];
+    if(!isdefined(data))
+        return;
+
+    if(data.type == "value")
+    {
+        value = float(new);
+        if(value == data.value)
+            return;
+    }
+    else if(data.type == "range")
+    {
+        value = float(new);
+        if(value >= data.min && value <= data.max)
+            return;
+    }
+    else if(data.type == "string")
+    {
+        if(new == data.value)
+            return;
+        value = toupper(new);
+    }
+    else
+        return;
+
+    // No waits: each listener appends directly to the same HUD without a notify queue.
+    level.T6EE_CHEAT_STRING = level.T6EE_CHEAT_STRING + "\n" + source_name + ": " + toupper(dvar) + " " + value;
+    level.T6EE_CHEAT_HUD.alpha = 1;
+    level.T6EE_CHEAT_HUD setTextUnlimited(level.T6EE_CHEAT_STRING);
 }
 
 add_restricted_dvar_value( dvar_in, value )
