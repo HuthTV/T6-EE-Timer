@@ -1,0 +1,9 @@
+[submodule "plugin/vendor/plutonium-sdk"]
+	path = plugin/vendor/plutonium-sdk
+	url = https://github.com/plutoniummod/plutonium-sdk.git
+[submodule "plugin/vendor/minhook-1.3.4"]
+	path = plugin/vendor/minhook-1.3.4
+	url = https://github.com/tsudakageyu/minhook.git
+[submodule "plugin/vendor/imgui-1.91.9b"]
+	path = plugin/vendor/imgui-1.91.9b
+	url = https://github.com/ocornut/imgui.git
