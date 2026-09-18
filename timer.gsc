@@ -54,7 +54,6 @@ init()
     thread run_anticheat();
     thread setup_start_data();
     thread on_player_connect();
-    thread verify_network_frame();
     thread upgrade_dvars();
     thread setup_splits_and_labels();
     thread handle_chat_commands();
@@ -922,27 +921,6 @@ player_rig_fridge(weapon)
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_clip", wpn["alt_clip"]);
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_stock", wpn["alt_stock"]);
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "lh_clip", wpn["lh_clip"]);
-}
-
-//Probably not needed anymore, safeguard for future pluto updates
-verify_network_frame()
-{
-    flag_wait("initial_blackscreen_passed");
-
-    while(incorrect_network_frame())
-    {
-        iprintln("^1BAD NETWORK FRAME");
-        wait 5;
-    }
-}
-
-incorrect_network_frame()
-{
-    start = gettime();
-    wait_network_frame();
-    delay = gettime() - start;
-
-    return (IS_SOLO && delay != SOLO_NETWORK_FRAME) || (!IS_SOLO && delay != COOP_NETWORK_FRAME);
 }
 
 init_default_config()
