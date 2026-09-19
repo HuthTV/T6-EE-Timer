@@ -1,4 +1,4 @@
-#define VERSION "6.1"
+#define VERSION "6.2"
 #define CFG_FILE "T6EE/T6EE.cfg"
 #define TIMER_FILE "T6EE/T6EE.dat"
 #define SUPER_TIME_FILE "T6EE/T6EE_super.dat"
@@ -64,6 +64,7 @@ init()
 
     if(level.T6EE_STATS_ACTIVE) thread stats_tracking();
     timer_start_wait();
+    if(level.T6EE_SUPER_TIMING && !IS_VICTIS) return;
     level.T6EE_SPLIT = [];
 
     if((level.T6EE_HUD) && level.non_first_super_map)
@@ -104,7 +105,7 @@ on_player_spawned()
     self waittill("spawned_player");
     if(IS_VICTIS) self thread upgrades_bank();
     wait 2.6;
-    self iprintln("^8[^1" + toupper(getDvar("shortversion")) +"^8][^3T6EE^8][^5" + VERSION + "^8]^7 " + GIT_LINK);
+    self iprintln("^3T6EE^5 " + VERSION + "^7 " + GIT_LINK);
 }
 
 super_timer()
@@ -151,9 +152,9 @@ setup_start_data()
     {
         //regular timing
         if(IS_TRANZIT && level.T6EE_SUPER_TIMING && fs_testfile(SUPER_TIME_FILE)) fs_remove(SUPER_TIME_FILE);
-        if(IS_SOLO && builtinfunctionexists("T6EE_Plugin_Reset"))
+        if( (!level.T6EE_SUPER_TIMING || IS_TRANZIT) && builtinfunctionexists("T6EE_Plugin_Reset"))
         {
-            invokebuiltin("T6EE_Plugin_Reset");
+            invokebuiltin("T6EE_Plugin_Reset", level.script);
         }
     }
 }
@@ -521,6 +522,7 @@ game_over_wait()
 
 send_livesplit_data( time )
 {
+    if(level.T6EE_SUPER_TIMING && !IS_VICTIS) return;
     if(IS_SOLO)
     {
         if(level.T6EE_TCP_SPLIT_NUM < level.T6EE_SPLIT_NUM)
@@ -990,7 +992,7 @@ fridge_validation_error(weapon)
     weapons = [];
 
     no_attachments = array(
-        "none", "judge_zm", "kard_zm", "fiveseven_zm", "beretta93r_zm",
+        "judge_zm", "kard_zm", "fiveseven_zm", "beretta93r_zm",
         "fivesevendw_zm", "fivesevendw_upgraded_zm",
         "ak74u_zm", "mp5k_zm", "mp5k_upgraded_zm",
         "870mcs_zm", "rottweil72_zm", "rottweil72_upgraded_zm",
