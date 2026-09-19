@@ -287,8 +287,9 @@ handle_chat_commands()
     while(true)
     {
         level waittill("say", message, player);
+        args = strtok(tolower(message), " ");
 
-        switch(tolower(message))
+        switch(args[0])
         {
             case "anticheat":
                 status = !getdvarint("EE_anticheat");
@@ -303,22 +304,22 @@ handle_chat_commands()
                 break;
 
             case "super":
-                status = toggle_setting("super_timing");
+                status = toggle_cfg_setting("super_timing");
                 iprintln("Super timing " + (status ? "^2enabled" : "^1disabled"));
                 break;
 
             case "stats":
-                status = toggle_setting("show_stats");
+                status = toggle_cfg_setting("show_stats");
                 iprintln("Display stats " + (status ? "^2enabled" : "^1disabled"));
                 break;
 
             case "timer":
-                status = toggle_setting("hud_timer");
+                status = toggle_cfg_setting("hud_timer");
                 iprintln("HUD Timer " + (status ? "^2enabled" : "^1disabled") + "^7 - use ^3fast_restart");
                 break;
 
             case "speed":
-                status = toggle_setting("hud_speed");
+                status = toggle_cfg_setting("hud_speed");
                 speed_active = isdefined(player.speedometer);
 
                 if(speed_active)
@@ -346,6 +347,22 @@ handle_chat_commands()
                     player iprintln("Host only command");
                 }
                 break;
+            
+            case "fridge":
+                gun = args[1];
+                result = fridge_validation_error(gun);
+                if(result == "")
+                {
+                    map = level.script;
+                    if(int(level.T6EE_CFG["super_timing"])) map = "super";
+                    write_cfg_setting(map + "_fridge_" + player.name, gun);
+                    player iprintln("Set [" + map + "] fridge: ^3" + gun);
+                }
+                else
+                {
+                    iprintln("Fridge: " + result);
+                }   
+                break;
 
             case "r":
             case "restart":
@@ -356,12 +373,18 @@ handle_chat_commands()
     }
 }
 
-toggle_setting(key)
+toggle_cfg_setting(key)
 {
     new_val = !int(level.T6EE_CFG[key]);
     level.T6EE_CFG[key] = new_val;
     write_config();
     return new_val;
+}
+
+write_cfg_setting(setting, key)
+{
+    level.T6EE_CFG[setting] = key;
+    write_config();
 }
 
 speedometer()
@@ -863,29 +886,12 @@ upgrades_bank()
                 self maps\mp\zombies\_zm_stats::set_client_stat(upgrade.stat_names[i], val);
             }
         }
+
+        self player_rig_fridge();  
     }
     else if(IS_BURIED) //Provide flopper on super runs
     {
         self maps\mp\zombies\_zm_stats::set_client_stat("pers_flopper_counter", getdvarint("pers_flopper_counter"));
-    }
-
-    flag_wait("initial_players_connected");
-
-    if(level.T6EE_SUPER_TIMING) //Only set super guns on die rise
-    {
-        //Assumed tranzit fridge is never used
-        //Don't clear if player left gun in die rise
-        if(!IS_BURIED) self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
-        if(IS_DIE_RISE) self player_rig_fridge("svu_zm");
-    }
-    else
-    {
-        if(IS_DIE_RISE) self player_rig_fridge("svu_zm");
-        if(IS_BURIED)
-        {
-            if(IS_SOLO) self player_rig_fridge("tar21_upgraded_zm+mms");
-            else self player_rig_fridge("mp5k_upgraded_zm");
-        }
     }
 
     flag_wait("initial_blackscreen_passed");
@@ -893,8 +899,22 @@ upgrades_bank()
     self.account_value = int(level.bank_account_max);
 }
 
-player_rig_fridge(weapon)
+player_rig_fridge()
 {
+    weapon = fridge_default();
+    map = level.T6EE_SUPER_TIMING ? "super" : level.script;
+    fridge_string = map + "_fridge_" + self.name;
+    result = "";
+    if(isdefined(level.T6EE_CFG[fridge_string]))
+    {
+        cfg_weapon = level.T6EE_CFG[fridge_string];
+        result = fridge_validation_error(cfg_weapon);
+        if(result == "")
+        {
+            weapon = cfg_weapon;
+        }
+    }
+
     self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
 
     wpn = [];
@@ -921,6 +941,109 @@ player_rig_fridge(weapon)
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_clip", wpn["alt_clip"]);
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_stock", wpn["alt_stock"]);
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "lh_clip", wpn["lh_clip"]);
+}
+
+fridge_default()
+{
+    if(level.T6EE_SUPER_TIMING) return "svu_zm";
+    if(IS_TRANZIT) return "usrpg_upgraded_zm";
+    if(IS_DIE_RISE) return "svu_zm";
+    if(IS_BURIED)
+    {
+        if(IS_SOLO) return "tar21_upgraded_zm+mms";
+        return "mp5k_zm";
+    }
+    return "none";
+}
+
+fridge_validation_error(weapon)
+{
+    if(!IS_VICTIS) return "Fridge available on TranZit, Die Rise and Buried";
+
+    weapons = [];
+
+    no_attachments = array(
+        "none", "judge_zm", "kard_zm", "fiveseven_zm", "beretta93r_zm",
+        "fivesevendw_zm", "fivesevendw_upgraded_zm",
+        "ak74u_zm", "mp5k_zm", "mp5k_upgraded_zm",
+        "870mcs_zm", "rottweil72_zm", "rottweil72_upgraded_zm",
+        "saiga12_zm", "srm1216_zm", "m14_zm", "m14_upgraded_zm",
+        "saritch_zm", "m16_zm", "m16_gl_upgraded_zm",
+        "tar21_zm", "galil_zm", "fnfal_zm", "dsr50_zm",
+        "barretm82_zm", "hamr_zm", "usrpg_zm", "usrpg_upgraded_zm",
+        "m32_zm", "m32_upgraded_zm", "python_zm", "python_upgraded_zm",
+        "qcw05_zm", "xm8_zm", "type95_zm", "rpd_zm", "rpd_upgraded_zm",
+        "pdw57_zm", "svu_zm", "an94_zm", "rnma_zm", "rnma_upgraded_zm",
+        "lsat_zm"
+    );
+
+    foreach(name in no_attachments)
+        weapons[name] = [];
+
+    weapons["judge_upgraded_zm"] = array("extbarrel", "dualclip_judge");
+    weapons["kard_upgraded_zm"] = array("extbarrel", "dualclip");
+    weapons["fiveseven_upgraded_zm"] = array("extbarrel", "dualclip");
+    weapons["beretta93r_upgraded_zm"] = array("extbarrel", "dualclip");
+    weapons["ak74u_upgraded_zm"] = array("reflex");
+    weapons["870mcs_upgraded_zm"] = array("reflex", "extbarrel");
+    weapons["saiga12_upgraded_zm"] = array("reflex", "extbarrel");
+    weapons["srm1216_upgraded_zm"] = array("reflex", "extbarrel");
+    weapons["saritch_upgraded_zm"] = array("dualoptic", "reflex", "rangefinder", "mms");
+    weapons["tar21_upgraded_zm"] = array("reflex", "longbreath", "rangefinder", "gl", "mms");
+    weapons["galil_upgraded_zm"] = array("reflex");
+    weapons["fnfal_upgraded_zm"] = array("reflex");
+    weapons["dsr50_upgraded_zm"] = array("vzoom", "is", "silencer");
+    weapons["barretm82_upgraded_zm"] = array("vzoom");
+    weapons["hamr_upgraded_zm"] = array("reflex", "grip", "acog");
+    weapons["qcw05_upgraded_zm"] = array("reflex", "grip", "dualclip", "sf");
+    weapons["xm8_upgraded_zm"] = array("reflex", "longbreath", "rangefinder", "gl", "mms");
+    weapons["type95_upgraded_zm"] = array("reflex", "longbreath", "rangefinder", "gl", "mms");
+    weapons["pdw57_upgraded_zm"] = array("reflex", "rangefinder", "mms");
+    weapons["svu_upgraded_zm"] = array("vzoom");
+    weapons["an94_upgraded_zm"] = array("reflex", "grip", "rangefinder", "mms");
+    weapons["lsat_upgraded_zm"] = array("rangefinder", "reflex", "grip", "acog");
+
+    has_attachment = issubstr( weapon, "+" );
+    parts = strtok(weapon, "+");
+    gun_name = parts[0];
+    
+    if(!isdefined(weapons[gun_name])) return "Not a valid weapon.";
+    if(parts.size > 2) return "Multiple attachments not valid.";
+    
+    if(has_attachment)
+    {
+        if(!isdefined(parts[1]))
+        {
+            return "Not a valid attachment.";
+        }
+
+        if(weapons[gun_name].size == 0) 
+        {
+            return "Weapon cannot use attachments."; 
+        }
+
+        attachment = parts[1];
+        legal_attachment = 0;
+        foreach(att in weapons[gun_name])
+        {
+            if(att == attachment)
+            legal_attachment = 1;
+        }
+        if(!legal_attachment)
+        {
+            return "Not a valid attachment.";
+        }
+    }
+    else
+    {
+        if(weapons[gun_name].size > 0) 
+        {
+            return "Weapon requires an attachment."; 
+        }
+    }
+    
+    // Empty error means success. The chat command displays confirmation after saving.
+    return "";
 }
 
 init_default_config()
