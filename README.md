@@ -2,7 +2,7 @@
 All-in-one timer script for speedrunning every Black Ops II zombies Easter Egg. Features automatic start, stop, and split functionality. Accuracy down to one game tick (50ms). Supports both in-game GSC timer and LiveSplit on solo via plutonium plugin built for Plutonium R5334 and later.
 
 ## 📺 Video Tutorial
-soon
+https://youtu.be/JNmMPagoiP0?si=6e-WXFv83W1muhW5
 
 ## 📥 Installation
 
