@@ -2,3 +2,5 @@
 *.bat
 compiled/
 parsed/
+!plugin/build.bat
+plugin/build/
