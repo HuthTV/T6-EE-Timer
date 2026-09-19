@@ -1,6 +1,7 @@
 #define VERSION "6.1"
 #define CFG_FILE "T6EE/T6EE.cfg"
 #define TIMER_FILE "T6EE/T6EE.dat"
+#define SUPER_TIME_FILE "T6EE/T6EE_super.dat"
 #define STATS_FILE "T6EE/T6EE.stats"
 #define GIT_LINK "github.com/HuthTV/T6-EE-Timer"
 #define SOLO_NETWORK_FRAME 100
@@ -40,6 +41,7 @@ init()
     flag_init("timer_start");
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
+    level.T6EE_TCP_SPLIT_NUM = 0;
     level.T6EE_Y_OFFSET = -34;
     level.T6EE_Y_MAP_OFFSET["zm_prison"] = 16;
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
@@ -79,6 +81,11 @@ init()
     }
 
     flag_set("timer_end");
+    if(IS_VICTIS && level.T6EE_SUPER_TIMING)
+    {
+        // Save the exact final split time, not the time after the loop's wait.
+        FS_WRITE_CLOSE(SUPER_TIME_FILE, "" + level.T6EE_FINAL_TIME);
+    }
 }
 
 on_player_connect()
@@ -129,23 +136,25 @@ super_timer()
 setup_start_data()
 {
     level.timing_offset = 0;
+    level.non_first_super_map = false;
     flag_wait("initial_players_connected");
     if(IS_VICTIS && level.T6EE_SUPER_TIMING) iprintln("Super EE timing ^2enabled");
-    level.non_first_super_map = level.T6EE_SUPER_TIMING && (IS_DIE_RISE || IS_BURIED) && fs_testfile(TIMER_FILE);
+    level.non_first_super_map = level.T6EE_SUPER_TIMING && (IS_DIE_RISE || IS_BURIED) && fs_testfile(SUPER_TIME_FILE);
 
     if(level.non_first_super_map)
     {
         //super timing, don't reset time
-        livesplit_handle = fs_fopen(TIMER_FILE, "read");
-        time = fs_read(livesplit_handle);
-        data = strtok(time, "|");
-        level.timing_offset = int(data[2]);
-        fs_fclose( livesplit_handle );
+        FS_READ_CLOSE(SUPER_TIME_FILE, time);
+        level.timing_offset = int(time);
     }
     else
     {
         //regular timing
-        FS_WRITE_CLOSE(TIMER_FILE, "zm_map|0|0|0"); // map|split|time|solo
+        if(IS_TRANZIT && level.T6EE_SUPER_TIMING && fs_testfile(SUPER_TIME_FILE)) fs_remove(SUPER_TIME_FILE);
+        if(IS_SOLO && builtinfunctionexists("T6EE_Plugin_Reset"))
+        {
+            invokebuiltin("T6EE_Plugin_Reset");
+        }
     }
 }
 
@@ -247,6 +256,7 @@ split_refresh()
 {
     while(!flag("game_over"))
     {
+        if(self.split_index < level.T6EE_SPLIT_NUM) break;
         time = gettime() - level.T6EE_START_TIME;
 
         if(level.T6EE_HUD)
@@ -256,9 +266,8 @@ split_refresh()
             self.timer setTextUnlimited(frame_string);
         }
 
-        write_livesplit_data(time + level.timing_offset);
+        send_livesplit_data(time + level.timing_offset);
 
-        if(self.split_index < level.T6EE_SPLIT_NUM) break;
         wait 0.05;
     }
 
@@ -510,10 +519,28 @@ game_over_wait()
     flag_set("game_over");
 }
 
-write_livesplit_data( time )
+send_livesplit_data( time )
 {
-        livesplit_data = level.script + "|" + level.T6EE_SPLIT_NUM + "|" + time + "|"  + IS_SOLO;
-        FS_WRITE_CLOSE(TIMER_FILE, livesplit_data);
+    if(IS_SOLO)
+    {
+        if(level.T6EE_TCP_SPLIT_NUM < level.T6EE_SPLIT_NUM)
+        {
+            while(level.T6EE_TCP_SPLIT_NUM < level.T6EE_SPLIT_NUM)
+            {
+                if(builtinfunctionexists("T6EE_Plugin_Split"))
+                {
+                    invokebuiltin("T6EE_Plugin_Split",
+                        level.script, level.T6EE_TCP_SPLIT_NUM, time);
+                }
+                level.T6EE_TCP_SPLIT_NUM++;
+            }
+        }
+        else if(builtinfunctionexists("T6EE_Plugin_SetGameTime"))
+        {
+            invokebuiltin("T6EE_Plugin_SetGameTime",
+                level.script, level.T6EE_SPLIT_NUM, time);
+        }
+    }
 }
 
 wait_for_split(split)
