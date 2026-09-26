@@ -1,4 +1,4 @@
-#define VERSION "6.2"
+#define VERSION "6.3"
 #define CFG_FILE "T6EE/T6EE.cfg"
 #define TIMER_FILE "T6EE/T6EE.dat"
 #define SUPER_TIME_FILE "T6EE/T6EE_super.dat"
@@ -41,7 +41,6 @@ init()
     flag_init("timer_start");
     level.T6EE_HUD = int(level.T6EE_CFG["hud_timer"]);
     level.T6EE_SPLIT_NUM = 0;
-    level.T6EE_TCP_SPLIT_NUM = 0;
     level.T6EE_Y_OFFSET = -34;
     level.T6EE_Y_MAP_OFFSET["zm_prison"] = 16;
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
@@ -123,15 +122,17 @@ super_timer()
     self.color = TIMER_ACTIVE_COLOR;
 
     flag_wait("timer_start");
-    while(!flag("game_over") && !flag("timer_end"))
+    while(!flag("game_over"))
     {
-        wait 0.05;
         time = level.timing_offset + gettime() - level.T6EE_START_TIME;
+        if(isdefined(level.T6EE_FINAL_TIME)) time = level.T6EE_FINAL_TIME;
         frame_string = "^3Total ^7" + game_time_string(time);
         self.split_string = frame_string;
         self setTextUnlimited(frame_string);
+        if(isdefined(level.T6EE_FINAL_TIME)) break;
+        wait 0.05;
     }
-    if(IS_BURIED && flag("timer_end")) self.color = TIMER_COMPLETE_COLOR;
+    if(IS_BURIED && isdefined(level.T6EE_FINAL_TIME)) self.color = TIMER_COMPLETE_COLOR;
 }
 
 setup_start_data()
@@ -249,30 +250,40 @@ process_split()
     self thread split_refresh();
     wait_for_split(self.split_id);
 
+    // capture once on completion, authoritative time
+    self.completed_time = gettime() - level.T6EE_START_TIME;
     if(self.split_id == "jetgun_power_off") handle_tranzit_branch();
     level.T6EE_SPLIT_NUM++;
+    time = self.completed_time + level.timing_offset;
+    if(level.T6EE_SPLIT_NUM == level.T6EE_SPLIT_LIST.size) level.T6EE_FINAL_TIME = time;
+    send_livesplit_data(time, self.split_index);
+    if(level.T6EE_HUD)
+    {
+        self update_split_hud(self.completed_time);
+        self.timer.color = TIMER_COMPLETE_COLOR;
+    }
 }
 
 split_refresh()
 {
     while(!flag("game_over"))
     {
-        if(self.split_index < level.T6EE_SPLIT_NUM) break;
+        // Split event owns final time
+        if(isdefined(self.completed_time)) break;
         time = gettime() - level.T6EE_START_TIME;
 
-        if(level.T6EE_HUD)
-        {
-            frame_string = "^3" + self.split_label + " ^7" + game_time_string(time);
-            self.split_string = frame_string;
-            self.timer setTextUnlimited(frame_string);
-        }
+        if(level.T6EE_HUD) self update_split_hud(time);
 
         send_livesplit_data(time + level.timing_offset);
-
         wait 0.05;
     }
+}
 
-    if(!flag("game_over")) self.timer.color = TIMER_COMPLETE_COLOR;
+update_split_hud( time )
+{
+    frame_string = "^3" + self.split_label + " ^7" + game_time_string(time);
+    self.split_string = frame_string;
+    self.timer setTextUnlimited(frame_string);
 }
 
 draw_client_split( index )
@@ -520,21 +531,17 @@ game_over_wait()
     flag_set("game_over");
 }
 
-send_livesplit_data( time )
+send_livesplit_data( time, split_index )
 {
     if(level.T6EE_SUPER_TIMING && !IS_VICTIS) return;
     if(IS_SOLO)
     {
-        if(level.T6EE_TCP_SPLIT_NUM < level.T6EE_SPLIT_NUM)
+        if(isdefined(split_index))
         {
-            while(level.T6EE_TCP_SPLIT_NUM < level.T6EE_SPLIT_NUM)
+            if(builtinfunctionexists("T6EE_Plugin_Split"))
             {
-                if(builtinfunctionexists("T6EE_Plugin_Split"))
-                {
-                    invokebuiltin("T6EE_Plugin_Split",
-                        level.script, level.T6EE_TCP_SPLIT_NUM, time);
-                }
-                level.T6EE_TCP_SPLIT_NUM++;
+                invokebuiltin("T6EE_Plugin_Split",
+                    level.script, split_index, time);
             }
         }
         else if(builtinfunctionexists("T6EE_Plugin_SetGameTime"))
@@ -708,7 +715,6 @@ run_anticheat()
         add_restricted_dvar_value( "cg_weaponCycleDelay", 0 );
         add_restricted_dvar_value( "cl_fix_25day_blackscreen", 0 );
         add_restricted_dvar_value( "g_fix_entity_leaks", 0 );
-        add_restricted_dvar_value( "g_gravity", 800 );
         add_restricted_dvar_value( "g_speed", 190 );
         add_restricted_dvar_value( "g_zm_fix_damage_overflow", 0 );
         add_restricted_dvar_value( "player_backSpeedScale", 0.7 );
