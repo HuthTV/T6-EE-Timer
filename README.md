@@ -6,7 +6,7 @@ https://youtu.be/JNmMPagoiP0?si=6e-WXFv83W1muhW5
 
 ## 📥 Installation
 
-### T6EE Timer Script → [Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V6.2/T6EE_6.2.gsc)
+### T6EE Timer Script → [Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V6.3/T6EE_6.3.gsc)
 
 Download the latest `T6EE.gsc` and place it in the Plutonium scripts folder:
 
