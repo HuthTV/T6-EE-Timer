@@ -6,7 +6,7 @@ https://youtu.be/JNmMPagoiP0?si=6e-WXFv83W1muhW5
 
 ## 📥 Installation
 
-### T6EE Timer Script → [Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V6.3/T6EE_6.3.gsc)
+### T6EE Timer Script → [Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V6.4/T6EE_6.4.gsc)
 
 Download the latest `T6EE.gsc` and place it in the Plutonium scripts folder:
 
@@ -14,11 +14,13 @@ Download the latest `T6EE.gsc` and place it in the Plutonium scripts folder:
 
 ## ⏱️ LiveSplit Setup
 
-### T6EE Plugin → [Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V6.2/T6EE_Plugin.dll)
+### T6EE Plugin → [Download](https://github.com/HuthTV/T6-EE-Timer/releases/download/V6.4/T6EE_Plugin-2026.10.12.dll)
 
 Download `T6EE_Plugin.dll` and place it in the Plutonium plugins folder:
 
     C:\Users\%username%\AppData\Local\Plutonium\plugins\
+
+The plugin is versioned by release date (e.g. `2026.10.12`), separately from the timer script. The version shows in the `F9` menu title.
 
 1. Right-click LiveSplit and select `Control` → `Start TCP Server`.
    - Alternatively, go to `Settings` → `Startup Behavior` and enable `Start TCP Server`.
