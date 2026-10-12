@@ -902,7 +902,7 @@ upgrade_dvars()
             level.T6EE_upgrades[level.T6EE_upgrades.size] = stat_name;
     }
 
-    set_dvar_if_unset("pers_insta_kill", !IS_TRANZIT);
+    set_dvar_if_unset("pers_insta_kill", 0);
 
     foreach(pers_perk in  level.T6EE_upgrades)
         set_dvar_if_unset(pers_perk, 1);
@@ -922,7 +922,7 @@ upgrades_bank()
             }
         }
 
-        self player_rig_fridge();  
+        self player_rig_fridge();
     }
     else if(IS_BURIED) //Provide flopper on super runs
     {
@@ -934,27 +934,38 @@ upgrades_bank()
     self.account_value = int(level.bank_account_max);
 }
 
-player_rig_fridge()
+player_fridge_weapon()
 {
     weapon = fridge_default();
     map = level.T6EE_SUPER_TIMING ? "super" : level.script;
     fridge_string = map + "_fridge_" + self.name;
-    result = "";
     if(isdefined(level.T6EE_CFG[fridge_string]))
     {
         cfg_weapon = level.T6EE_CFG[fridge_string];
-        result = fridge_validation_error(cfg_weapon);
-        if(result == "")
+        if(fridge_validation_error(cfg_weapon) == "")
         {
             weapon = cfg_weapon;
         }
     }
+    return weapon;
+}
 
+player_rig_fridge()
+{
+    weapon = self player_fridge_weapon();
     self maps\mp\zombies\_zm_stats::clear_stored_weapondata();
 
     wpn = [];
     wpn["clip"] = weaponclipsize(weapon);
     wpn["stock"] = weaponmaxammo(weapon);
+
+    //Weapons not loaded on this map report 0 ammo, use recorded values instead
+    if(wpn["clip"] == 0 && wpn["stock"] == 0)
+    {
+        wpn["clip"] = fridge_recorded_ammo(weapon, "clip");
+        wpn["stock"] = fridge_recorded_ammo(weapon, "stock");
+    }
+
     wpn["dw_name"] = weapondualwieldweaponname(weapon);
     wpn["alt_name"] = weaponaltweaponname(weapon);
     wpn["lh_clip"] = ( wpn["dw_name"] != "none" ) ? weaponclipsize(wpn["dw_name"]) : 0;
@@ -976,6 +987,29 @@ player_rig_fridge()
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_clip", wpn["alt_clip"]);
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "alt_stock", wpn["alt_stock"]);
     self setdstat("PlayerStatsByMap", "zm_transit", "weaponLocker", "lh_clip", wpn["lh_clip"]);
+}
+
+//Hardcoded ammo values for Die Rise/Buried fridge weapons TranZit does not load
+fridge_recorded_ammo(weapon, type)
+{
+    parts = strtok(weapon, "+");
+    switch(parts[0])
+    {
+        case "svu_zm":              clip = 12;  stock = 96;  break;
+        case "svu_upgraded_zm":     clip = 12;  stock = 192; break;
+        case "pdw57_zm":            clip = 50;  stock = 200; break;
+        case "pdw57_upgraded_zm":   clip = 50;  stock = 350; break;
+        case "an94_zm":             clip = 30;  stock = 300; break;
+        case "an94_upgraded_zm":    clip = 50;  stock = 600; break;
+        case "lsat_zm":             clip = 100; stock = 400; break;
+        case "lsat_upgraded_zm":    clip = 100; stock = 600; break;
+        case "rnma_zm":             clip = 6;   stock = 84;  break;
+        case "rnma_upgraded_zm":    clip = 12;  stock = 96;  break;
+        default:                    clip = 0;   stock = 0;   break;
+    }
+
+    if(type == "clip") return clip;
+    return stock;
 }
 
 fridge_default()
