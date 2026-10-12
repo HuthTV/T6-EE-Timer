@@ -140,6 +140,7 @@ setup_start_data()
     level.timing_offset = 0;
     level.non_first_super_map = false;
     flag_wait("initial_players_connected");
+    if(builtinfunctionexists("T6EE_Plugin_Mode")) invokebuiltin("T6EE_Plugin_Mode", (level.T6EE_SUPER_TIMING && IS_VICTIS) ? "super" : "single");
     if(IS_VICTIS && level.T6EE_SUPER_TIMING) iprintln("Super EE timing ^2enabled");
     level.non_first_super_map = level.T6EE_SUPER_TIMING && (IS_DIE_RISE || IS_BURIED) && fs_testfile(SUPER_TIME_FILE);
 

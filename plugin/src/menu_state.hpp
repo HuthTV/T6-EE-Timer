@@ -20,11 +20,14 @@ namespace menu_state
         int key = 0x78; // Use F9 because Plutonium uses F10
     };
     struct telemetry { int map = -1; int index = -1; };
+    enum class run_mode { unknown, single, super };
     int map_index(const char* name);
     bool valid_menu_key(int key);
     bool valid(int map, int index, int milliseconds, bool split);
     bool accepts_map(int map);
     bool enabled(int map, int index);
+    void set_run_mode(run_mode value);
+    run_mode get_run_mode();
     preferences get_preferences();
     void set_preferences(const preferences& value);
     void observe(int map, int index);

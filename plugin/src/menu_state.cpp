@@ -19,6 +19,7 @@ namespace menu_state
         std::condition_variable wake;
         bool requested = false;
         bool stopping = false;
+        run_mode mode = run_mode::unknown; // Set by GSC on each map load; never saved
 
         void save_worker()
         {
@@ -70,16 +71,18 @@ namespace menu_state
     {
         if (map < 0 || map >= 5) return false;
         std::lock_guard lock(mutex);
-        return !prefs.super_mode || map == 0 || map == 1 || map == 3;
+        return mode != run_mode::super || map == 0 || map == 1 || map == 3;
     }
     bool enabled(int map, int index)
     {
         if (!valid(map, index, 0, true)) return false;
         std::lock_guard lock(mutex);
-        if (prefs.super_mode && map != 0 && map != 1 && map != 3) return false;
-        if (!prefs.super_mode && map == 3 && index == 5) return false;
-        return ((prefs.super_mode ? prefs.super_masks[map] : prefs.masks[map]) & (1u << index)) != 0;
+        const bool super = mode == run_mode::super;
+        if (super && map != 0 && map != 1 && map != 3) return false;
+        return ((super ? prefs.super_masks[map] : prefs.masks[map]) & (1u << index)) != 0;
     }
+    void set_run_mode(run_mode value) { std::lock_guard lock(mutex); mode = value; }
+    run_mode get_run_mode() { std::lock_guard lock(mutex); return mode; }
     preferences get_preferences() { std::lock_guard lock(mutex); return prefs; }
     void set_preferences(const preferences& value)
     {

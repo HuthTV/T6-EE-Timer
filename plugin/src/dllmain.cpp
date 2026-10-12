@@ -81,6 +81,19 @@ namespace
             livesplit::reset(menu_state::map_index(map));
         else plutonium_interface->logging()->info("[T6EE TCP] reset refused: binding mismatch or unexpected arguments");
     }
+    // GSC sends "super" or "single" on every map load, so a previous run's mode cannot carry over
+    void set_run_mode()
+    {
+        char mode[32]{};
+        if (read_message(mode, nullptr, nullptr) != 0)
+        {
+            plutonium_interface->logging()->info("[T6EE mode] refused: binding mismatch or unexpected arguments");
+            return;
+        }
+        if (std::strcmp(mode, "super") == 0) menu_state::set_run_mode(menu_state::run_mode::super);
+        else if (std::strcmp(mode, "single") == 0) menu_state::set_run_mode(menu_state::run_mode::single);
+        else plutonium_interface->logging()->info("[T6EE mode] rejected: expected super or single");
+    }
 
 }
 
@@ -110,6 +123,7 @@ public:
         plutonium_interface->gsc()->register_function("T6EE_Plugin_SetGameTime", set_game_time);
         plutonium_interface->gsc()->register_function("T6EE_Plugin_Split", split_game_time);
         plutonium_interface->gsc()->register_function("T6EE_Plugin_Reset", reset_livesplit);
+        plutonium_interface->gsc()->register_function("T6EE_Plugin_Mode", set_run_mode);
         plutonium_interface->scheduler()->on_frame(livesplit::poll_status, scheduler::thread::game);
     }
 

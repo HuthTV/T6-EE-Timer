@@ -51,6 +51,12 @@ namespace overlay
             ImGui::Text("Split: %d %s", current.index + 1, split_name);
         }
         else ImGui::TextDisabled("Waiting for map start...");
+        switch (menu_state::get_run_mode())
+        {
+        case menu_state::run_mode::super: ImGui::Text("Run: Super Easter Egg"); break;
+        case menu_state::run_mode::single: ImGui::Text("Run: Single map"); break;
+        default: ImGui::TextDisabled("Run: waiting for timer script"); break;
+        }
         ImGui::Spacing();
         static int selected = current.map >= 0 ? current.map : 0;
         auto prefs = menu_state::get_preferences();
