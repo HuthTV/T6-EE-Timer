@@ -6,6 +6,7 @@
 #include "livesplit.hpp"
 #include "menu_state.hpp"
 #include "overlay.hpp"
+#include "version.hpp"
 
 using namespace plutonium::sdk::interfaces;
 
@@ -81,6 +82,33 @@ namespace
             livesplit::reset(menu_state::map_index(map));
         else plutonium_interface->logging()->info("[T6EE TCP] reset refused: binding mismatch or unexpected arguments");
     }
+    // Engine Scr_AddInt (ZM, address from t6-gsc-utils). Pushes a GSC return value; it clears the
+    // builtin's arguments itself (calls Scr_ClearOutParams 0x627540). Bytes captured from the running game
+    // and matching Scr_AddString's prologue; checked before every call.
+    int push_return_int(int value)
+    {
+        static const unsigned char add_int_code[] = {
+            0x8B,0x44,0x24,0x04,0x56,0x8B,0xF0,0x69,0xF6,0xA8,0x42,0x00,0x00,0x83,0xBE,0xEC,0xA8,0xDE,0x02,0x00,
+            0x74,0x09,0x50,0xE8,0xE4,0x3A,0xFE,0xFF,0x83,0xC4,0x04,0x8B,0x86,0xE0,0xA8,0xDE,0x02,0x3B,0x86,0xD4,
+            0xA8,0xDE,0x02,0x75,0x0D
+        };
+        __try
+        {
+            if (std::memcmp(reinterpret_cast<const void*>(0x643A40), add_int_code, sizeof(add_int_code))) return 1;
+            reinterpret_cast<void(__cdecl*)(int, int)>(0x643A40)(0, value); // 0 = server script instance
+            return 0;
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER)
+        {
+            return 1;
+        }
+    }
+    // Only plugin function that returns a value to GSC: the compatibility level GSC checks before any other call
+    void get_api()
+    {
+        if (read_message(nullptr, nullptr, nullptr) != 0 || push_return_int(T6EE_PLUGIN_API) != 0)
+            plutonium_interface->logging()->info("[T6EE api] refused: binding mismatch or unexpected arguments");
+    }
     // GSC sends "super" or "single" on every map load, so a previous run's mode cannot carry over
     void set_run_mode()
     {
@@ -114,6 +142,7 @@ public:
         [[maybe_unused]] const plutonium::sdk::game game) override
     {
         plutonium_interface = interface_ptr;
+        plutonium_interface->logging()->info("T6EE Plugin " T6EE_PLUGIN_VERSION " (API " + std::to_string(T6EE_PLUGIN_API) + ")");
         menu_state::initialize();
         livesplit::startup(interface_ptr);
         const bool menu_ready = overlay::startup();
@@ -125,6 +154,7 @@ public:
         plutonium_interface->gsc()->register_function("T6EE_Plugin_Reset", reset_livesplit);
         plutonium_interface->gsc()->register_function("T6EE_Plugin_Mode", set_run_mode);
         plutonium_interface->scheduler()->on_frame(livesplit::poll_status, scheduler::thread::game);
+        plutonium_interface->gsc()->register_function("T6EE_Plugin_Api", get_api);
     }
 
     void on_shutdown() override

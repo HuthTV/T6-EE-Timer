@@ -2,6 +2,7 @@
 #include "overlay.hpp"
 #include "menu_state.hpp"
 #include "livesplit.hpp"
+#include "version.hpp"
 #include <imgui.h>
 
 namespace overlay
@@ -38,7 +39,8 @@ namespace overlay
     {
         ImGui::SetNextWindowSize(ImVec2(540, 560), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos(ImVec2(35, 35), ImGuiCond_FirstUseEver);
-        if (!ImGui::Begin("T6EE | LiveSplit settings", open, ImGuiWindowFlags_NoCollapse))
+        // ### keeps the window ID stable so saved size/position survive version changes
+        if (!ImGui::Begin("T6EE " T6EE_PLUGIN_VERSION " | LiveSplit settings###T6EE", open, ImGuiWindowFlags_NoCollapse))
         { ImGui::End(); return; }
         ImGui::TextWrapped("Make sure T6EE.gsc script is loaded and LiveSplit TCP server is running.");
         ImGui::Separator();
