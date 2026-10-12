@@ -370,6 +370,12 @@ handle_chat_commands()
                 break;
             
             case "fridge":
+                if(!isdefined(args[1]))
+                {
+                    player iprintln("Usage: ^3fridge <weapon>");
+                    break;
+                }
+
                 gun = args[1];
                 result = fridge_validation_error(gun);
                 if(result == "")
@@ -381,7 +387,7 @@ handle_chat_commands()
                 }
                 else
                 {
-                    iprintln("Fridge: " + result);
+                    player iprintln("Fridge: " + result);
                 }   
                 break;
 
