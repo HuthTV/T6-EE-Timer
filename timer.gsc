@@ -1,5 +1,5 @@
 #define VERSION "6.4"
-#define PLUGIN_API 1 //minimum T6EE_Plugin_Api level
+#define PLUGIN_API 1 //T6EE_Plugin_Api level this timer is built for, must match exactly
 #define CFG_FILE "T6EE/T6EE.cfg"
 #define TIMER_FILE "T6EE/T6EE.dat"
 #define SUPER_TIME_FILE "T6EE/T6EE_super.dat"
@@ -46,7 +46,8 @@ init()
     level.T6EE_Y_MAP_OFFSET["zm_prison"] = 16;
     level.T6EE_Y_MAP_OFFSET["zm_tomb"] = 76;
     level.T6EE_STATS_ACTIVE = int(level.T6EE_CFG["show_stats"]);
-    level.T6EE_SUPER_TIMING = int(level.T6EE_CFG["super_timing"]);
+    level.T6EE_SUPER_TIMING = int(level.T6EE_CFG["super_timing"]) && IS_VICTIS;
+    level.T6EE_SUPER_PAUSED = int(level.T6EE_CFG["super_timing"]) && !IS_VICTIS; //wrong map mid super run: leave run untouched
     if(isdefined(level.T6EE_Y_MAP_OFFSET[level.script])) level.T6EE_Y_OFFSET = level.T6EE_Y_MAP_OFFSET[level.script];
 
     plugin_check();
@@ -64,9 +65,9 @@ init()
     thread game_over_wait();
     thread fov_clamp();
 
-    if(level.T6EE_STATS_ACTIVE) thread stats_tracking();
+    if(level.T6EE_STATS_ACTIVE && !level.T6EE_SUPER_PAUSED) thread stats_tracking();
     timer_start_wait();
-    if(level.T6EE_SUPER_TIMING && !IS_VICTIS) return;
+    if(level.T6EE_SUPER_PAUSED) return;
     level.T6EE_SPLIT = [];
 
     if((level.T6EE_HUD) && level.non_first_super_map)
@@ -108,24 +109,28 @@ on_player_spawned()
     if(IS_VICTIS) self thread upgrades_bank();
     wait 2.6;
     self iprintln("^3T6EE^5 " + VERSION + "^7 " + GIT_LINK);
-    if(level.T6EE_PLUGIN_OUTDATED) self iprintln("^1T6EE plugin outdated^7 - LiveSplit disabled, update plugin");
+    if(isdefined(level.T6EE_PLUGIN_STATUS)) self iprintln(level.T6EE_PLUGIN_STATUS);
+    if(level.T6EE_SUPER_PAUSED) self iprintln("^1Super mode active^7 - timer not started");
 }
 
-//Plugin is optional. Decide once, before any plugin call, whether it is installed and new enough.
+//Plugin is optional. Decide once, before any plugin call, whether it is installed and its API matches.
 //An incompatible plugin is treated as absent so it cannot affect the timer.
 plugin_check()
 {
     level.T6EE_PLUGIN = false;
-    level.T6EE_PLUGIN_OUTDATED = false;
+    if(level.T6EE_SUPER_PAUSED) return; //no plugin calls, LiveSplit keeps the super run
     if(!builtinfunctionexists("T6EE_Plugin_Split")) return; //not installed
 
     api = undefined;
     if(builtinfunctionexists("T6EE_Plugin_Api")) api = invokebuiltin("T6EE_Plugin_Api");
     if(!isdefined(api) || !isint(api)) api = 0; //predates T6EE_Plugin_Api or bad return
 
+    level.T6EE_PLUGIN = api == PLUGIN_API;
     printf("T6EE plugin API " + api + ", timer requires " + PLUGIN_API + "\n");
-    level.T6EE_PLUGIN = api >= PLUGIN_API;
-    level.T6EE_PLUGIN_OUTDATED = !level.T6EE_PLUGIN;
+
+    //Accepted stays silent in game, like a missing plugin
+    if(api < PLUGIN_API) level.T6EE_PLUGIN_STATUS = "^1T6EE plugin outdated^7 - download latest plugin version";
+    if(api > PLUGIN_API) level.T6EE_PLUGIN_STATUS = "^1T6EE timer outdated for plugin^7 - download latest timer version";
 }
 
 super_timer()
@@ -161,7 +166,7 @@ setup_start_data()
     level.timing_offset = 0;
     level.non_first_super_map = false;
     flag_wait("initial_players_connected");
-    if(level.T6EE_PLUGIN) invokebuiltin("T6EE_Plugin_Mode", (level.T6EE_SUPER_TIMING && IS_VICTIS) ? "super" : "single");
+    if(level.T6EE_PLUGIN && builtinfunctionexists("T6EE_Plugin_Mode")) invokebuiltin("T6EE_Plugin_Mode", level.T6EE_SUPER_TIMING ? "super" : "single");
     if(IS_VICTIS && level.T6EE_SUPER_TIMING) iprintln("Super EE timing ^2enabled");
     level.non_first_super_map = level.T6EE_SUPER_TIMING && (IS_DIE_RISE || IS_BURIED) && fs_testfile(SUPER_TIME_FILE);
 
@@ -175,7 +180,7 @@ setup_start_data()
     {
         //regular timing
         if(IS_TRANZIT && level.T6EE_SUPER_TIMING && fs_testfile(SUPER_TIME_FILE)) fs_remove(SUPER_TIME_FILE);
-        if( (!level.T6EE_SUPER_TIMING || IS_TRANZIT) && level.T6EE_PLUGIN)
+        if( (!level.T6EE_SUPER_TIMING || IS_TRANZIT) && level.T6EE_PLUGIN && builtinfunctionexists("T6EE_Plugin_Reset"))
         {
             invokebuiltin("T6EE_Plugin_Reset", level.script);
         }
@@ -562,15 +567,15 @@ game_over_wait()
 send_livesplit_data( time, split_index )
 {
     if(!level.T6EE_PLUGIN) return;
-    if(level.T6EE_SUPER_TIMING && !IS_VICTIS) return;
     if(IS_SOLO)
     {
         if(isdefined(split_index))
         {
-            invokebuiltin("T6EE_Plugin_Split",
-                level.script, split_index, time);
+            if(builtinfunctionexists("T6EE_Plugin_Split"))
+                invokebuiltin("T6EE_Plugin_Split",
+                    level.script, split_index, time);
         }
-        else
+        else if(builtinfunctionexists("T6EE_Plugin_SetGameTime"))
         {
             invokebuiltin("T6EE_Plugin_SetGameTime",
                 level.script, level.T6EE_SPLIT_NUM, time);
